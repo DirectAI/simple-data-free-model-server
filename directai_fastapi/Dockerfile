@@ -3,8 +3,6 @@ WORKDIR /directai_fastapi
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-RUN mkdir caching
-COPY caching caching
 COPY pydantic_models.py .
 COPY server.py .
 COPY run.sh .

@@ -4,9 +4,7 @@ from fastapi import FastAPI, Request
 
 from pydantic_models import (
     DeployResponse,
-    HTTPExceptionResponse,
-    ClassifierDeploy,
-    DetectorDeploy
+    HTTPExceptionResponse
 )
 
 app = FastAPI()
