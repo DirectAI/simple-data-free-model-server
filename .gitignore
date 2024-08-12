@@ -1,1 +1,2 @@
 redis_data/dump.rdb
+logs/**
