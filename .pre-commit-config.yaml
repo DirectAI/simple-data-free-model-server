@@ -3,7 +3,3 @@ repos:
     rev: v1.5.1  # or the latest version of mypy
     hooks:
       - id: mypy
-        additional_dependencies:
-          [
-            "types-redis",
-          ]
