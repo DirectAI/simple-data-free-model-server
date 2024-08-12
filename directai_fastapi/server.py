@@ -1,5 +1,4 @@
 import os
-import redis.asyncio as redis
 from fastapi import FastAPI, Request
 
 from pydantic_models import (
