@@ -2,7 +2,7 @@ import uuid
 import json
 from fastapi import HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 import redis.asyncio as redis
 
 class DeployResponse(BaseModel):
@@ -71,6 +71,11 @@ class ClassifierDeploy(BaseModel):
             'deployed_id': self.deployed_id,
             'message': message
         }
+
+class ClassifierResponse(BaseModel):
+    scores: Dict[str, float]
+    pred: str
+    raw_scores: Dict[str, float]
 
 class SingleDetectorClass(BaseModel):
     name: str

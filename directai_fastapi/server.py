@@ -1,9 +1,12 @@
 import os
+import json
 from fastapi import (
     FastAPI, 
     Request,
     HTTPException,
-    status
+    status,
+    UploadFile,
+    File
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -13,7 +16,8 @@ from pydantic_models import (
     DeployResponse,
     HTTPExceptionResponse,
     ClassifierDeploy,
-    DetectorDeploy
+    DetectorDeploy,
+    ClassifierResponse
 )
 
 app = FastAPI()
@@ -24,6 +28,18 @@ def grab_redis_endpoint(kwargs: dict = {}) -> str:
     password = kwargs.get("password", os.environ.get("CACHE_REDIS_PASSWORD", "default_password"))
     port = kwargs.get("port", os.environ.get("CACHE_REDIS_PORT", 6379))
     return f"redis://{username}:{password}@{host}:{port}"
+
+async def grab_config(deployed_id: str) -> dict:
+    try:
+        model_config = await app.state.config_cache.get(deployed_id)
+    except KeyError as ke:
+        raise HTTPException(status_code=400, detail="Key not found")
+    except Exception as e:
+        raise HTTPException(
+            status_code=502,
+            detail = "Exception in Model Config Storage Server. Please try again."
+        )
+    return json.loads(model_config)
 
 @app.on_event("startup")
 async def startup_event() -> None:        
@@ -105,9 +121,30 @@ async def deploy_detector(request: Request, config: DetectorDeploy) -> dict:
     print(f"Deployed detector w/ ID: {deploy_response['deployed_id']}")
     return deploy_response
 
-@app.get("/classify")
-def classify() -> dict:
-    return {"message": "Hello, World!"}
+@app.post(
+    "/classify", 
+    include_in_schema=True, 
+    responses={
+        200: {"model": ClassifierResponse},
+        400: {"model": HTTPExceptionResponse},
+        401: {"model": HTTPExceptionResponse},
+        403: {"model": HTTPExceptionResponse},
+        422: {"model": HTTPExceptionResponse},
+        429: {"model": HTTPExceptionResponse},
+        502: {"model": HTTPExceptionResponse}
+    }
+)
+async def classify_examples(
+    request: Request,
+    deployed_id: str, 
+    data: UploadFile=File()
+) -> None:
+    """Get classification score from deployed model"""
+    # image = data.file.read()
+    # raise_if_cannot_open(image)
+    print(f"Got request for {deployed_id}, which is a classifier model")
+    loaded_config = await grab_config(deployed_id)
+    print(loaded_config)
 
 @app.get("/detect")
 def detect() -> dict:
