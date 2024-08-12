@@ -7,5 +7,8 @@ COPY pydantic_models.py .
 COPY server.py .
 COPY run.sh .
 
+RUN mkdir unit_tests
+COPY unit_tests unit_tests
+
 RUN chmod +x run.sh
 CMD ./run.sh
