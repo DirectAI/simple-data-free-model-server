@@ -21,8 +21,6 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - HF_HOME=/.cache/huggingface
     runtime: nvidia
-    env_file:
-      - directai_fastapi/.env
     volumes:
       - ./logs:/logs
     depends_on:
