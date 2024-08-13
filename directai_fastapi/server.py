@@ -17,7 +17,8 @@ from typing import (
     List, 
     Any, 
     Union, 
-    Collection
+    Collection,
+    Optional
 )
 
 from pydantic_models import (
@@ -50,11 +51,20 @@ def generate_random_classifier_scores(labels: List[str]) -> Dict[str, Union[str,
     to_return["raw_scores"] = raw_scores_dict
     return to_return
 
-def grab_redis_endpoint(kwargs: dict = {}) -> str:
-    host = kwargs.get("host", os.environ.get("CACHE_REDIS_HOST", "host.docker.internal"))
-    username = kwargs.get("username", os.environ.get("CACHE_REDIS_USERNAME", "default"))
-    password = kwargs.get("password", os.environ.get("CACHE_REDIS_PASSWORD", "default_password"))
-    port = kwargs.get("port", os.environ.get("CACHE_REDIS_PORT", 6379))
+def grab_redis_endpoint(
+    host: Optional[str] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    port: Optional[Union[int,str]] = None
+) -> str:
+    if host is None:
+        host = os.environ.get("CACHE_REDIS_HOST", "host.docker.internal")
+    if username is None:
+        username = os.environ.get("CACHE_REDIS_USERNAME", "default")
+    if password is None: 
+        password = os.environ.get("CACHE_REDIS_PASSWORD", "default_password")
+    if port is None: 
+        port = os.environ.get("CACHE_REDIS_PORT", 6379)
     return f"redis://{username}:{password}@{host}:{port}"
 
 async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]]:
