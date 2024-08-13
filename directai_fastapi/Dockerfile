@@ -1,4 +1,4 @@
-FROM tiangolo/uvicorn-gunicorn:python3.10-slim-2023-04-03
+FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
 WORKDIR /directai_fastapi
 
 COPY requirements.txt .
