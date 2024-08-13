@@ -1,7 +1,7 @@
 import uuid
 import json
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, conlist, Field
 from typing import Optional, List, Dict
 import redis.asyncio as redis
 
@@ -137,4 +137,17 @@ class DetectorDeploy(BaseModel):
             'message': message
         }
 
+class SingleDetectionResponse(BaseModel):
+    # see discussion: https://github.com/pydantic/pydantic/issues/975
+    tlbr: conlist(float, min_items=4, max_items=4) # type: ignore[valid-type]
+    score: float
+    class_: str = Field(alias='class')
+
+class VerboseDetectorConfig(BaseModel):
+    name: str
+
+    incs: List[str]
+    excs: List[str] = []
+    
+    thresh: Optional[float] = None
 

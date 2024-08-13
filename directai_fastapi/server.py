@@ -25,13 +25,18 @@ from pydantic_models import (
     HTTPExceptionResponse,
     ClassifierDeploy,
     ClassifierResponse,
-    DetectorDeploy
+    DetectorDeploy,
+    SingleDetectionResponse,
+    VerboseDetectorConfig
 )
 from utils import raise_if_cannot_open
 
 app = FastAPI()
 
 def get_classifier_model_handle() -> None:
+    pass
+
+def get_detector_model_handle() -> None:
     pass
 
 def generate_random_classifier_scores(labels: List[str]) -> Dict[str, Union[str, Dict[str, float]]]:
@@ -50,6 +55,19 @@ def generate_random_classifier_scores(labels: List[str]) -> Dict[str, Union[str,
     to_return["scores"] = scores_dict
     to_return["raw_scores"] = raw_scores_dict
     return to_return
+
+def generate_random_detector_scores(labels: List[str]) -> List[List[SingleDetectionResponse]]:
+    to_return: List[SingleDetectionResponse] = []
+    for l in labels:
+        num_detections = random.randint(0, 5)
+        for d_idx in range(num_detections):
+            detection: Dict[str, Union[List[float], str, float]] = {
+                "tlbr": [random.uniform(0, 1000) for _ in range(4)],
+                "score": random.random(),
+                "class": l
+            }
+            to_return.append(SingleDetectionResponse(detection))
+    return [to_return]
 
 def grab_redis_endpoint(kwargs: dict = {}) -> str:
     host = kwargs.get("host", os.environ.get("CACHE_REDIS_HOST", "host.docker.internal"))
@@ -187,6 +205,38 @@ async def deploy_detector(request: Request, config: DetectorDeploy) -> dict:
     print(f"Deployed detector w/ ID: {deploy_response['deployed_id']}")
     return deploy_response
 
-@app.get("/detect")
-def detect() -> dict:
-    return {"message": "Hello, World!"}
+@app.post(
+    "/detect", 
+    include_in_schema=True, 
+    responses={
+        200: {"model": List[List[SingleDetectionResponse]]},
+        400: {"model": HTTPExceptionResponse},
+        401: {"model": HTTPExceptionResponse},
+        403: {"model": HTTPExceptionResponse},
+        422: {"model": HTTPExceptionResponse},
+        429: {"model": HTTPExceptionResponse},
+        502: {"model": HTTPExceptionResponse}
+    }
+)
+async def run_detector(
+    request: Request,
+    deployed_id: str,
+    data: UploadFile=File(),
+) -> List[List[SingleDetectionResponse]]:
+    """Get detections from deployed model"""
+    print(f"Got request for {deployed_id}, which is a detector model")
+    image = data.file.read()
+    raise_if_cannot_open(image)
+    get_detector_model_handle()
+    detector_configs = await grab_config(deployed_id)
+    ## NOTE: This might break if we have embedded BaseModel-inheriting objects inside the json object
+    verbose_detector_configs = [
+        VerboseDetectorConfig(**json.loads(d) if isinstance(d, str) else d) 
+        for d in detector_configs['detector_configs']
+    ]
+    print(f"augment_examples: {detector_configs.get('augment_examples', None)}")
+    
+    class_labels = [d["name"] for d in verbose_detector_configs]
+    pred = generate_random_detector_scores(labels=class_labels)
+    
+    return pred

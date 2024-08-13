@@ -2,15 +2,18 @@ import os
 import unittest
 import requests
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, conlist
 from typing import Dict, Any, List, Union
 from scipy.optimize import linear_sum_assignment
 
 FASTAPI_HOST = "host.docker.internal"
 
-class SingleDetection(BaseModel):
-    label: str = Field(..., alias='class')
-    tlbr: List[float]
+# copying over from directai_fastapi/pydantic_models.py
+class SingleDetectionResponse(BaseModel):
+    # see discussion: https://github.com/pydantic/pydantic/issues/975
+    tlbr: conlist(float, min_items=4, max_items=4) # type: ignore[valid-type]
+    score: float
+    class_: str = Field(alias='class')
 
 def bbox_iou(box1: List[float], box2: List[float]) -> float:
     """
@@ -55,7 +58,7 @@ def compute_kl_divergence_based_classification_loss(response1: Dict[str, Any] , 
     kl_divergence = np.sum(scores1 * np.log(scores1 / scores2))
     return kl_divergence
 
-def compute_naive_bipartite_detection_loss(detections_set_1: List[SingleDetection], detections_set_2: List[SingleDetection], unmatched_loss: float =1.0) -> float:
+def compute_naive_bipartite_detection_loss(detections_set_1: List[SingleDetectionResponse], detections_set_2: List[SingleDetectionResponse], unmatched_loss: float =1.0) -> float:
     """
     Computes the bipartite matching average loss between two sets of detections with potentially different sizes.
     If the classes are not equal, the loss is set to 1. Otherwise, the loss is the IoU of the bounding boxes.
@@ -667,8 +670,8 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(
             len(detect_response_json), 1
         )
-        expected_detect_response = [SingleDetection(d) for d in expected_detect_response_unaccelerated[0]]
-        actual_detect_response = [SingleDetection(d) for d in detect_response_json[0]]
+        expected_detect_response = [SingleDetectionResponse(d) for d in expected_detect_response_unaccelerated[0]]
+        actual_detect_response = [SingleDetectionResponse(d) for d in detect_response_json[0]]
         self.assertLess(
             compute_naive_bipartite_detection_loss(
                 expected_detect_response,
@@ -789,8 +792,8 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(
             len(detect_response_json), 1
         )
-        expected_detect_response = [SingleDetection(d) for d in expected_detect_response_unaccelerated[0]]
-        actual_detect_response = [SingleDetection(d) for d in detect_response_json[0]]
+        expected_detect_response = [SingleDetectionResponse(d) for d in expected_detect_response_unaccelerated[0]]
+        actual_detect_response = [SingleDetectionResponse(d) for d in detect_response_json[0]]
         self.assertLess(
             compute_naive_bipartite_detection_loss(
                 expected_detect_response,
@@ -845,8 +848,8 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(
             len(detect_response_json), 1
         )
-        expected_detect_response = [SingleDetection(d) for d in expected_detect_response_unaccelerated[0]]
-        actual_detect_response = [SingleDetection(d) for d in detect_response_json[0]]
+        expected_detect_response = [SingleDetectionResponse(d) for d in expected_detect_response_unaccelerated[0]]
+        actual_detect_response = [SingleDetectionResponse(d) for d in detect_response_json[0]]
         self.assertLess(
             compute_naive_bipartite_detection_loss(
                 expected_detect_response,
@@ -901,8 +904,8 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(
             len(detect_response_json), 1
         )
-        expected_detect_response = [SingleDetection(d) for d in expected_detect_response_accelerated[0]]
-        actual_detect_response = [SingleDetection(d) for d in detect_response_json[0]]
+        expected_detect_response = [SingleDetectionResponse(d) for d in expected_detect_response_accelerated[0]]
+        actual_detect_response = [SingleDetectionResponse(d) for d in detect_response_json[0]]
         self.assertLess(
             compute_naive_bipartite_detection_loss(
                 expected_detect_response,
