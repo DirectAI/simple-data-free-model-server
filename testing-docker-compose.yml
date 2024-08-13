@@ -1,0 +1,16 @@
+version: '2.3'
+
+services:
+  tests:
+    build: integration_tests/
+    container_name: local_tests
+    networks:
+      - deploy_network
+    volumes:
+      - ./logs:/logs
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+networks:
+  deploy_network:
+    driver: bridge

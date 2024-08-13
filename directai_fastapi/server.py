@@ -1,7 +1,22 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, Request
+
+from pydantic_models import (
+    DeployResponse,
+    HTTPExceptionResponse
+)
 
 app = FastAPI()
 
+@app.on_event("startup")
+async def startup_event() -> None:    
+    pass
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    # TODO: Explicitly dump redis state to disk
+    pass
+    
 @app.post("/deploy_classifier")
 def deploy_classifier() -> dict:
     return {"message": "Hello, World!"}
@@ -10,7 +25,6 @@ def deploy_classifier() -> dict:
 def deploy_detector() -> dict:
     return {"message": "Hello, World!"}
 
-# light change
 @app.get("/classify")
 def classify() -> dict:
     return {"message": "Hello, World!"}
