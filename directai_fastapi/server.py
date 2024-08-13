@@ -155,7 +155,6 @@ async def classify_examples(
     data: UploadFile=File()
 ) -> Dict[str, Union[str, Dict[str, float]]]:
     """Get classification score from deployed model"""
-    """Get classification score from deployed model"""
     image = data.file.read()
     raise_if_cannot_open(image)
     print(f"Got request for {deployed_id}, which is a classifier model")

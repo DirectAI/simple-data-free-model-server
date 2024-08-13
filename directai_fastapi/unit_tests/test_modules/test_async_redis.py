@@ -12,10 +12,7 @@ class TestAsyncRedisConnection(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(await self.redis_connection.ping())
     
     async def asyncTearDown(self) -> None:
-        with warnings.catch_warnings():
-            # catching the warning as mypy refuses to recognize .aclose()
-            warnings.simplefilter("ignore", DeprecationWarning)
-            await self.redis_connection.close()
+        await self.redis_connection.aclose() # type: ignore [attr-defined]
 
 class TestBadAsyncRedisConnection(unittest.IsolatedAsyncioTestCase):
     async def test_bad_async_connection(self) -> None:
