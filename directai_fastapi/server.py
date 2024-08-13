@@ -24,7 +24,6 @@ from pydantic_models import (
     DeployResponse,
     HTTPExceptionResponse,
     ClassifierDeploy,
-    DetectorDeploy,
     ClassifierResponse
 )
 from utils import raise_if_cannot_open
@@ -129,28 +128,6 @@ async def deploy_classifier(request: Request, config: ClassifierDeploy) -> dict:
     return deploy_response
 
 @app.post(
-    "/deploy_detector", 
-    include_in_schema=True, 
-    responses={
-        200: {"model": DeployResponse},
-        401: {"model": HTTPExceptionResponse},
-        403: {"model": HTTPExceptionResponse},
-        422: {"model": HTTPExceptionResponse},
-        429: {"model": HTTPExceptionResponse},
-        502: {"model": HTTPExceptionResponse}
-    }
-)
-async def deploy_detector(request: Request, config: DetectorDeploy) -> dict:
-    """
-    Deploy New or Edit Existing Detector with Natural Language. We expect at least one class definition.
-    
-    Optionally, provide the `deployed_id` of an existing object detector to modify its configuration in-place.
-    """
-    deploy_response = await config.save_configuration(config_cache=app.state.config_cache)
-    print(f"Deployed detector w/ ID: {deploy_response['deployed_id']}")
-    return deploy_response
-
-@app.post(
     "/classify", 
     include_in_schema=True, 
     responses={
@@ -186,6 +163,10 @@ async def classify_examples(
     print(f"Got scores: {scores}")
     
     return scores
+
+@app.get("/deploy_detector")
+def deploy_detector() -> dict:
+    return {"message": "Hello, World!"}
 
 @app.get("/detect")
 def detect() -> dict:
