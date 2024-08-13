@@ -76,7 +76,6 @@ async def startup_event() -> None:
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
-    # TODO: Explicitly dump redis state to disk
     await app.state.config_cache.aclose()
 
 @app.exception_handler(RequestValidationError)
