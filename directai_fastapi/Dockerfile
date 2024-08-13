@@ -1,4 +1,4 @@
-FROM tiangolo/uvicorn-gunicorn:python3.10-slim-2023-04-03
+FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
 WORKDIR /directai_fastapi
 
 RUN apt-get update
@@ -15,5 +15,8 @@ COPY utils.py .
 RUN mkdir unit_tests
 COPY unit_tests unit_tests
 
+RUN mkdir unit_tests
+COPY unit_tests unit_tests
+
 RUN chmod +x run.sh
-CMD ["./run.sh"]
+CMD ["./run.sh"]    

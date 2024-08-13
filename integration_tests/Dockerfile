@@ -11,8 +11,6 @@ COPY sample_data sample_data
 
 WORKDIR /integration_tests
 
-
-
 COPY test.py .
 
 WORKDIR /
