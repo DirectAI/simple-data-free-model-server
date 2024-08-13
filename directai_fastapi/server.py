@@ -1,5 +1,6 @@
 import os
 import json
+import random
 from fastapi import (
     FastAPI, 
     Request,
@@ -11,6 +12,13 @@ from fastapi import (
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import redis.asyncio as redis
+from typing import (
+    Dict, 
+    List, 
+    Any, 
+    Union, 
+    Collection
+)
 
 from pydantic_models import (
     DeployResponse,
@@ -19,8 +27,29 @@ from pydantic_models import (
     DetectorDeploy,
     ClassifierResponse
 )
+from utils import raise_if_cannot_open
 
 app = FastAPI()
+
+def get_classifier_model_handle() -> None:
+    pass
+
+def generate_random_classifier_scores(labels: List[str]) -> Dict[str, Union[str, Dict[str, float]]]:
+    to_return: Dict[str, Union[str, Dict[str, float]]] = {
+        "scores": {},
+        "raw_scores": {},
+        "pred": ""
+    }
+    scores_dict: Dict[str, float] = {}
+    raw_scores_dict: Dict[str, float] = {}
+    for l in labels:
+        scores_dict[l] = random.random()
+        raw_scores_dict[l] = random.random()
+    
+    to_return["pred"] = random.choice(labels)
+    to_return["scores"] = scores_dict
+    to_return["raw_scores"] = raw_scores_dict
+    return to_return
 
 def grab_redis_endpoint(kwargs: dict = {}) -> str:
     host = kwargs.get("host", os.environ.get("CACHE_REDIS_HOST", "host.docker.internal"))
@@ -29,16 +58,16 @@ def grab_redis_endpoint(kwargs: dict = {}) -> str:
     port = kwargs.get("port", os.environ.get("CACHE_REDIS_PORT", 6379))
     return f"redis://{username}:{password}@{host}:{port}"
 
-async def grab_config(deployed_id: str) -> dict:
+async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]]:
     try:
         model_config = await app.state.config_cache.get(deployed_id)
-    except KeyError as ke:
-        raise HTTPException(status_code=400, detail="Key not found")
     except Exception as e:
         raise HTTPException(
             status_code=502,
             detail = "Exception in Model Config Storage Server. Please try again."
         )
+    if model_config is None:
+        raise HTTPException(status_code=400, detail="Key not found")
     return json.loads(model_config)
 
 @app.on_event("startup")
@@ -138,13 +167,25 @@ async def classify_examples(
     request: Request,
     deployed_id: str, 
     data: UploadFile=File()
-) -> None:
+) -> Dict[str, Union[str, Dict[str, float]]]:
     """Get classification score from deployed model"""
-    # image = data.file.read()
-    # raise_if_cannot_open(image)
+    """Get classification score from deployed model"""
+    image = data.file.read()
+    raise_if_cannot_open(image)
     print(f"Got request for {deployed_id}, which is a classifier model")
     loaded_config = await grab_config(deployed_id)
-    print(loaded_config)
+    labels = loaded_config["labels"]
+    assert isinstance(labels, list), "Labels should be a list of strings"
+    inc_sub_labels_dict = loaded_config.get("inc_sub_labels_dict", None)
+    exc_sub_labels_dict = loaded_config.get("exc_sub_labels_dict", None)
+    controls = loaded_config.get("controls", None)
+    augment_examples = loaded_config.get("augment_examples", True)
+    # TODO: Build model hanlde
+    get_classifier_model_handle()
+    scores = generate_random_classifier_scores(labels)
+    print(f"Got scores: {scores}")
+    
+    return scores
 
 @app.get("/detect")
 def detect() -> dict:
