@@ -27,29 +27,15 @@ from pydantic_models import (
     ClassifierDeploy,
     ClassifierResponse
 )
-from utils import raise_if_cannot_open
+from utils import (
+    raise_if_cannot_open,
+    get_classifier_model_handle,
+    generate_random_classifier_scores
+)
 
 app = FastAPI()
 
-def get_classifier_model_handle() -> None:
-    pass
 
-def generate_random_classifier_scores(labels: List[str]) -> Dict[str, Union[str, Dict[str, float]]]:
-    to_return: Dict[str, Union[str, Dict[str, float]]] = {
-        "scores": {},
-        "raw_scores": {},
-        "pred": ""
-    }
-    scores_dict: Dict[str, float] = {}
-    raw_scores_dict: Dict[str, float] = {}
-    for l in labels:
-        scores_dict[l] = random.random()
-        raw_scores_dict[l] = random.random()
-    
-    to_return["pred"] = random.choice(labels)
-    to_return["scores"] = scores_dict
-    to_return["raw_scores"] = raw_scores_dict
-    return to_return
 
 def grab_redis_endpoint(
     host: Optional[str] = None,
