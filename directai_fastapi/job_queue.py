@@ -1,5 +1,5 @@
 import asyncio
-from multiprocessing import Process, Queue, set_start_method
+from multiprocessing import Process, Queue
 from pydantic import BaseModel
 import torch
 
@@ -18,6 +18,8 @@ class ExampleModel:
 
 def worker_process(gpu_index: int, model_args: ExampleModelConfig, input_queue: Queue, output_queue: Queue):
     model = ExampleModel(model_args)
+    
+    print(f"Worker {gpu_index} starting")
     
     while True:
         # NOTE: this could be modified to support batching
