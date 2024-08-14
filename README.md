@@ -1,5 +1,8 @@
 # simple-data-free-model-server
 
+### On Pre-Commit Hooks
+- Make sure you run `pip install pre-commit` followed by `pre-commit install` before attempting to commit to the repo.
+
 ### Launching Production Service
 - `sudo docker-compose build && sudo docker-compose up`
 

@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import random
 from fastapi import (
@@ -17,7 +18,8 @@ from typing import (
     List, 
     Any, 
     Union, 
-    Collection
+    Collection,
+    Optional
 )
 
 from pydantic_models import (
@@ -29,56 +31,38 @@ from pydantic_models import (
     SingleDetectionResponse,
     VerboseDetectorConfig
 )
-from utils import raise_if_cannot_open
+from utils import (
+    raise_if_cannot_open,
+    get_classifier_model_handle,
+    get_detector_model_handle,
+    generate_random_classifier_scores,
+    generate_random_detector_scores
+)
 
 app = FastAPI()
 
-def get_classifier_model_handle() -> None:
-    pass
-
-def get_detector_model_handle() -> None:
-    pass
-
-def generate_random_classifier_scores(labels: List[str]) -> Dict[str, Union[str, Dict[str, float]]]:
-    to_return: Dict[str, Union[str, Dict[str, float]]] = {
-        "scores": {},
-        "raw_scores": {},
-        "pred": ""
-    }
-    scores_dict: Dict[str, float] = {}
-    raw_scores_dict: Dict[str, float] = {}
-    for l in labels:
-        scores_dict[l] = random.random()
-        raw_scores_dict[l] = random.random()
-    
-    to_return["pred"] = random.choice(labels)
-    to_return["scores"] = scores_dict
-    to_return["raw_scores"] = raw_scores_dict
-    return to_return
-
-def generate_random_detector_scores(labels: List[str]) -> List[List[SingleDetectionResponse]]:
-    to_return: List[SingleDetectionResponse] = []
-    for l in labels:
-        num_detections = random.randint(0, 5)
-        for d_idx in range(num_detections):
-            detection: Dict[str, Union[List[float], str, float]] = {
-                "tlbr": [random.uniform(0, 1000) for _ in range(4)],
-                "score": random.random(),
-                "class": l
-            }
-            to_return.append(SingleDetectionResponse(detection))
-    return [to_return]
-
-def grab_redis_endpoint(kwargs: dict = {}) -> str:
-    host = kwargs.get("host", os.environ.get("CACHE_REDIS_HOST", "host.docker.internal"))
-    username = kwargs.get("username", os.environ.get("CACHE_REDIS_USERNAME", "default"))
-    password = kwargs.get("password", os.environ.get("CACHE_REDIS_PASSWORD", "default_password"))
-    port = kwargs.get("port", os.environ.get("CACHE_REDIS_PORT", 6379))
+def grab_redis_endpoint(
+    host: Optional[str] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    port: Optional[Union[int,str]] = None
+) -> str:
+    if host is None:
+        host = os.environ.get("CACHE_REDIS_HOST", "host.docker.internal")
+    if username is None:
+        username = os.environ.get("CACHE_REDIS_USERNAME", "default")
+    if password is None: 
+        password = os.environ.get("CACHE_REDIS_PASSWORD", "default_password")
+    if port is None: 
+        port = os.environ.get("CACHE_REDIS_PORT", 6379)
     return f"redis://{username}:{password}@{host}:{port}"
 
 async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]]:
     try:
+        start_time = time.time()
         model_config = await app.state.config_cache.get(deployed_id)
+        end_time = time.time()
+        print("Config Get Latency:", end_time-start_time)
     except Exception as e:
         raise HTTPException(
             status_code=502,
@@ -99,9 +83,9 @@ async def shutdown_event() -> None:
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-	exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
-	print(f"{request}: {exc_str}")
-	return JSONResponse(
+    exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
+    print(f"{request}: {exc_str}")
+    return JSONResponse(
         status_code = status.HTTP_422_UNPROCESSABLE_ENTITY,
         content = {
             'status_code': status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -163,7 +147,6 @@ async def classify_examples(
     deployed_id: str, 
     data: UploadFile=File()
 ) -> Dict[str, Union[str, Dict[str, float]]]:
-    """Get classification score from deployed model"""
     """Get classification score from deployed model"""
     image = data.file.read()
     raise_if_cannot_open(image)
