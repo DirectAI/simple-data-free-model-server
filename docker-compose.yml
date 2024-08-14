@@ -22,7 +22,7 @@ services:
       - HF_HOME=/.cache/huggingface
     env_file:
       - directai_fastapi/.env
-    runtime: nvidia
+    # runtime: nvidia
     volumes:
       - ./directai_fastapi/logs:/directai_fastapi/logs
     depends_on:
