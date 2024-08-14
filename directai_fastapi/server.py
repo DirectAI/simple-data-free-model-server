@@ -1,11 +1,4 @@
-import logging
-
-logging.basicConfig(
-    filename='logs/local_fastapi.log',
-    format='%(asctime)s,%(msecs)03d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
-    datefmt='%Y-%m-%d:%H:%M:%S',
-    level=logging.INFO
-)
+from logging_config import logger
 import os
 import json
 import random
@@ -42,7 +35,6 @@ from modeling.distributed_backend import (
 from utils import (
     raise_if_cannot_open
 )
-logger = logging.getLogger(__name__)
 
 app = FastAPI()
 

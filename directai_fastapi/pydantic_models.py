@@ -1,12 +1,10 @@
 import uuid
 import json
-import logging
+from logging_config import logger
 from fastapi import HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 import redis.asyncio as redis
-
-logger = logging.getLogger(__name__)
 
 class DeployResponse(BaseModel):
     deployed_id: str

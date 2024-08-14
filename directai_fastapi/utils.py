@@ -1,7 +1,7 @@
 from PIL import Image
 import cv2
 import random
-import logging
+from logging_config import logger
 import numpy as np
 import io
 from copy import deepcopy
@@ -11,8 +11,6 @@ from typing import (
     List, 
     Union
 )
-
-logger = logging.getLogger(__name__)
 
 def validate_can_open_with_opencv(image: bytes) -> bool:
     try:
