@@ -15,5 +15,8 @@ COPY utils.py .
 RUN mkdir unit_tests
 COPY unit_tests unit_tests
 
+RUN mkdir modeling
+COPY modeling modeling
+
 RUN chmod +x run.sh
 CMD ./run.sh

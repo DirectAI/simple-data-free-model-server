@@ -29,8 +29,10 @@ from pydantic_models import (
 )
 from utils import (
     raise_if_cannot_open,
-    get_classifier_model_handle,
-    generate_random_classifier_scores
+)
+from modeling.distributed_backend import (
+    deploy_classifier_backend_model,
+    deploy_detector_backend_model
 )
 
 app = FastAPI()
@@ -66,7 +68,9 @@ async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]
     return json.loads(model_config)
 
 @app.on_event("startup")
-async def startup_event() -> None:        
+async def startup_event() -> None:    
+    app.state.classifier_handle = deploy_classifier_backend_model()
+    app.state.detector_handle = deploy_detector_backend_model()
     app.state.config_cache = await redis.from_url(f"{grab_redis_endpoint()}?decode_responses=True")
     print(f"Ping successful: {await app.state.config_cache.ping()}")
 
@@ -151,10 +155,9 @@ async def classify_examples(
     exc_sub_labels_dict = loaded_config.get("exc_sub_labels_dict", None)
     controls = loaded_config.get("controls", None)
     augment_examples = loaded_config.get("augment_examples", True)
-    # TODO: Build model hanlde
-    get_classifier_model_handle()
-    scores = generate_random_classifier_scores(labels)
-    print(f"Got scores: {scores}")
+    
+    # TODO: run actual classifier model
+    scores = await app.state.classifier_handle.remote(None)
     
     return scores
 
@@ -163,5 +166,6 @@ def deploy_detector() -> dict:
     return {"message": "Hello, World!"}
 
 @app.get("/detect")
-def detect() -> dict:
-    return {"message": "Hello, World!"}
+async def detect() -> dict:
+    bboxes = await app.state.detector_handle.remote(None)
+    return {"bboxes": bboxes}
