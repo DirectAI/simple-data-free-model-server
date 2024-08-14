@@ -1,5 +1,6 @@
 import uuid
 import json
+import time
 from fastapi import HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict
@@ -66,7 +67,10 @@ class ClassifierDeploy(BaseModel):
             message = "Model updated."
         
         assert self.deployed_id is not None, "deployed_id should not be None at this point"
+        start_time = time.time()
         await config_cache.set(self.deployed_id,json.dumps(config_dict))
+        end_time = time.time()
+        print("Config Set Latency:", end_time-start_time)
         return {
             'deployed_id': self.deployed_id,
             'message': message

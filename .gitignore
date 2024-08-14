@@ -1,2 +1,2 @@
-redis_data/appendonlydir/*
+redis_data/appendonlydir/
 logs/**

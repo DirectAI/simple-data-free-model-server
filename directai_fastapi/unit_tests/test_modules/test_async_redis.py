@@ -1,4 +1,5 @@
 import asyncio
+import time
 import unittest
 import redis.asyncio as redis
 
@@ -43,6 +44,14 @@ class TestGoodWriteRead(unittest.IsolatedAsyncioTestCase):
         self.redis_connection = await redis.from_url(real_redis_endpoint+"?decode_responses=True")
         key_name = "key_name"
         key_val = "key_val"
+        start_time = time.time()
         await self.redis_connection.set(key_name, key_val)
+        end_time = time.time()
+        latency = (end_time - start_time) * 1000  # Convert to milliseconds
+        self.assertTrue(latency < 5)
+        start_time = time.time()
         grabbed_val = await self.redis_connection.get(key_name)
+        end_time = time.time()
+        latency = (end_time - start_time) * 1000  # Convert to milliseconds
+        self.assertTrue(latency < 5)
         self.assertEqual(grabbed_val, key_val)
