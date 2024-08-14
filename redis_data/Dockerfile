@@ -5,7 +5,6 @@ EXPOSE 6379
 # Create a volume
 VOLUME /data
 COPY redis_entrypoint.sh redis_entrypoint.sh
-COPY redis.conf /usr/local/etc/redis/redis.conf
 RUN chmod +x redis_entrypoint.sh
 # Use an environment variable for the password
 # Start Redis server when the container runs
