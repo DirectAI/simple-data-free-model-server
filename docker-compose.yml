@@ -22,7 +22,7 @@ services:
       - HF_HOME=/.cache/huggingface
     runtime: nvidia
     volumes:
-      - ./logs:/logs
+      - ./directai_fastapi/logs:/directai_fastapi/logs
     depends_on:
       - local_redis
     extra_hosts:

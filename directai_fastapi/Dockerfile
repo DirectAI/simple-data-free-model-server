@@ -12,6 +12,7 @@ COPY server.py .
 COPY run.sh .
 COPY utils.py .
 
+RUN mkdir logs
 RUN mkdir unit_tests
 COPY unit_tests unit_tests
 

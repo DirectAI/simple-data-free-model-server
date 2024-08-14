@@ -1,9 +1,12 @@
 import uuid
 import json
+import logging
 from fastapi import HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 import redis.asyncio as redis
+
+logger = logging.getLogger(__name__)
 
 class DeployResponse(BaseModel):
     deployed_id: str
@@ -31,9 +34,9 @@ class ClassifierDeploy(BaseModel):
         orm_mode = True
     
     async def save_configuration(self, config_cache: redis.Redis) -> dict:
-        print(f"Classifier Configs: {self.classifier_configs}")
+        logger.info(f"Classifier Configs: {self.classifier_configs}")
         for classifier_config in self.classifier_configs:
-            print(classifier_config.examples_to_include)
+            logger.info(classifier_config.examples_to_include)
             if len(classifier_config.examples_to_include) == 0:
                 raise HTTPException(
                     status_code = 422,

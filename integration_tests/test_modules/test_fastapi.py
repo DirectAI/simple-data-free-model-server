@@ -163,7 +163,7 @@ class TestClassify(unittest.TestCase):
                 'bottle': 0.6345123648643494,
                 'can': 0.36548763513565063
             },
-            'pred': 'bottle',
+            'ed': 'bottle',
             'raw_scores': {
                 'bottle': 0.6409257650375366,
                 'can': 0.6023120284080505
