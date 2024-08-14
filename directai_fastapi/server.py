@@ -7,10 +7,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 import os
-
 import json
 import random
-
 from fastapi import (
     FastAPI, 
     Request,
@@ -37,10 +35,12 @@ from pydantic_models import (
     ClassifierDeploy,
     ClassifierResponse
 )
+from modeling.distributed_backend import (
+    deploy_classifier_backend_model,
+    deploy_detector_backend_model
+)
 from utils import (
-    raise_if_cannot_open,
-    get_classifier_model_handle,
-    generate_random_classifier_scores
+    raise_if_cannot_open
 )
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,9 @@ async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]
     return json.loads(model_config)
 
 @app.on_event("startup")
-async def startup_event() -> None:        
+async def startup_event() -> None:    
+    app.state.classifier_handle = deploy_classifier_backend_model()
+    app.state.detector_handle = deploy_detector_backend_model()
     app.state.config_cache = await redis.from_url(f"{grab_redis_endpoint()}?decode_responses=True")
     logger.info(f"Ping successful: {await app.state.config_cache.ping()}")
 
@@ -161,10 +163,10 @@ async def classify_examples(
     inc_sub_labels_dict = loaded_config.get("inc_sub_labels_dict", None)
     exc_sub_labels_dict = loaded_config.get("exc_sub_labels_dict", None)
     controls = loaded_config.get("controls", None)
-    augment_examples = loaded_config.get("augment_examples", True)
-    # TODO: Build model hanlde
-    get_classifier_model_handle()
-    scores = generate_random_classifier_scores(labels)
+    augment_examples = loaded_config.get("augment_examples", True)    
+    
+    # TODO: run actual classifier model
+    scores = await app.state.classifier_handle.remote(None)
     logger.info(f"Got scores: {scores}")
     
     return scores
@@ -174,5 +176,6 @@ def deploy_detector() -> dict:
     return {"message": "Hello, World!"}
 
 @app.get("/detect")
-def detect() -> dict:
-    return {"message": "Hello, World!"}
+async def detect() -> dict:
+    bboxes = await app.state.detector_handle.remote(None)
+    return {"bboxes": bboxes}
