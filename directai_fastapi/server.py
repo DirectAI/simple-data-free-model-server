@@ -32,10 +32,10 @@ from pydantic_models import (
 )
 from utils import (
     raise_if_cannot_open,
-    get_classifier_model_handle,
-    get_detector_model_handle,
-    generate_random_classifier_scores,
-    generate_random_detector_scores
+)
+from modeling.distributed_backend import (
+    deploy_classifier_backend_model,
+    deploy_detector_backend_model
 )
 
 app = FastAPI()
@@ -69,7 +69,9 @@ async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]
     return json.loads(model_config)
 
 @app.on_event("startup")
-async def startup_event() -> None:        
+async def startup_event() -> None:    
+    app.state.classifier_handle = deploy_classifier_backend_model()
+    app.state.detector_handle = deploy_detector_backend_model()
     app.state.config_cache = await redis.from_url(f"{grab_redis_endpoint()}?decode_responses=True")
     print(f"Ping successful: {await app.state.config_cache.ping()}")
 
@@ -154,10 +156,9 @@ async def classify_examples(
     exc_sub_labels_dict = loaded_config.get("exc_sub_labels_dict", None)
     controls = loaded_config.get("controls", None)
     augment_examples = loaded_config.get("augment_examples", True)
-    # TODO: Build model hanlde
-    get_classifier_model_handle()
-    scores = generate_random_classifier_scores(labels)
-    print(f"Got scores: {scores}")
+    
+    # TODO: run actual classifier model
+    scores = await app.state.classifier_handle.remote(None)
     
     return scores
 
@@ -206,7 +207,6 @@ async def run_detector(
     print(f"Got request for {deployed_id}, which is a detector model")
     image = data.file.read()
     raise_if_cannot_open(image)
-    get_detector_model_handle()
     detector_configs = await grab_config(deployed_id)
     ## NOTE: This might break if we have embedded BaseModel-inheriting objects inside the json object
     verbose_detector_configs = [
@@ -215,7 +215,6 @@ async def run_detector(
     ]
     print(f"augment_examples: {detector_configs.get('augment_examples', None)}")
     
-    class_labels = [d.name for d in verbose_detector_configs]
-    pred = generate_random_detector_scores(labels=class_labels)
+    bboxes = await app.state.detector_handle.remote(None)
+    return bboxes
     
-    return pred

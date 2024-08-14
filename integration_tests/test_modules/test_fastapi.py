@@ -216,6 +216,56 @@ class TestClassify(unittest.TestCase):
         self.assertTrue('deployed_id' in response_json)
         self.assertEqual(response_json['message'], "New model deployed.")
     
+    def test_classify_filler(self) -> None:
+        body = {
+            "classifier_configs": [
+                {
+                    "name": "bottle",
+                    "examples_to_include": [
+                        "bottle"
+                    ],
+                    "examples_to_exclude": []
+                },
+                {
+                    "name": "can",
+                    "examples_to_include": [
+                        "can"
+                    ],
+                    "examples_to_exclude": []
+                }
+            ]
+        }
+        response = requests.post(
+            self.endpoint+"deploy_classifier",
+            json=body
+        )
+        response_json = response.json()
+        
+        sample_deployed_id = response_json['deployed_id']
+        
+        sample_fp = "sample_data/coke_through_the_ages.jpeg"
+        with open(sample_fp, 'rb') as f:
+            file_data = f.read()
+        files = {
+            'data': (sample_fp, file_data, "image/jpg"),
+        }
+        params = {
+            'deployed_id': sample_deployed_id
+        }
+        response = requests.post(
+            self.endpoint+"classify",
+            params=params,
+            files=files
+        )
+        self.assertEqual(response.status_code, 200)
+        response_json = response.json()
+        
+        self.assertIn('scores', response_json)
+        self.assertIn('pred', response_json)
+        self.assertIn('raw_scores', response_json)
+        
+        self.assertEqual(response_json['pred'], 'dog')
+    
     @unittest.skip("classifier isn't built yet")
     def test_classify(self) -> None:
         sample_deployed_id = "b5d1bdec-3bf3-4632-a011-538384d5bcb1"
