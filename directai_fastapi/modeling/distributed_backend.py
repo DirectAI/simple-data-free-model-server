@@ -21,12 +21,12 @@ class ImageClassifier:
 
 
 def deploy_classifier_backend_model() -> DeploymentHandle:
-    classifier = ImageClassifier.bind()
+    classifier = ImageClassifier.bind() # type: ignore
     handle = serve.run(classifier, name="classifier", route_prefix=None)
     return handle
 
 
 def deploy_detector_backend_model() -> DeploymentHandle:
-    detector = ObjectDetector.bind()
+    detector = ObjectDetector.bind() # type: ignore
     handle = serve.run(detector, name="detector", route_prefix=None)
     return handle
