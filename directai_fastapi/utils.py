@@ -74,5 +74,5 @@ def generate_random_detector_scores(labels: List[str]) -> List[List[SingleDetect
                 "score": random.random(),
                 "class": l
             }
-            to_return.append(SingleDetectionResponse(detection))
+            to_return.append(SingleDetectionResponse(**detection))
     return [to_return]

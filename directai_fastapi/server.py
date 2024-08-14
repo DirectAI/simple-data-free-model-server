@@ -219,7 +219,7 @@ async def run_detector(
     ]
     print(f"augment_examples: {detector_configs.get('augment_examples', None)}")
     
-    class_labels = [d["name"] for d in verbose_detector_configs]
+    class_labels = [d.name for d in verbose_detector_configs]
     pred = generate_random_detector_scores(labels=class_labels)
     
     return pred
