@@ -1,5 +1,4 @@
 import os
-import time
 import json
 import random
 from fastapi import (
@@ -59,10 +58,7 @@ def grab_redis_endpoint(
 
 async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]]:
     try:
-        start_time = time.time()
         model_config = await app.state.config_cache.get(deployed_id)
-        end_time = time.time()
-        print("Config Get Latency:", end_time-start_time)
     except Exception as e:
         raise HTTPException(
             status_code=502,
