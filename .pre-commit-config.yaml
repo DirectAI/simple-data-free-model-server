@@ -5,6 +5,7 @@ repos:
       - id: mypy
         additional_dependencies:
           [
-            "redis==5.0.1",
+            # "redis==5.0.1",
+            "types-redis",
             "types-requests==2.28.1"
           ]
