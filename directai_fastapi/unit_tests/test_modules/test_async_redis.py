@@ -1,7 +1,6 @@
 import asyncio
 import unittest
 import redis.asyncio as redis
-import warnings
 
 from server import grab_redis_endpoint
 
@@ -21,14 +20,24 @@ class TestBadAsyncRedisConnection(unittest.IsolatedAsyncioTestCase):
             self.redis_connection = await redis.from_url(bad_endpoint)
 
 class TestBadKeyGrab(unittest.IsolatedAsyncioTestCase):
-    async def test_bad_key_grab(self) -> None:
+    async def asyncSetUp(self) -> None:
         real_redis_endpoint = grab_redis_endpoint()
         self.redis_connection = await redis.from_url(real_redis_endpoint)
+        key_name = "key_name"
+        await self.redis_connection.delete(key_name)
+        
+    async def test_bad_key_grab(self) -> None:
         key_name = "key_name"
         value = await self.redis_connection.get(key_name)
         self.assertEqual(value, None)
 
 class TestGoodWriteRead(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self) -> None:
+        real_redis_endpoint = grab_redis_endpoint()
+        self.redis_connection = await redis.from_url(real_redis_endpoint)
+        key_name = "key_name"
+        await self.redis_connection.delete(key_name)
+        
     async def test_good_write_read(self) -> None:
         real_redis_endpoint = grab_redis_endpoint()
         self.redis_connection = await redis.from_url(real_redis_endpoint+"?decode_responses=True")
