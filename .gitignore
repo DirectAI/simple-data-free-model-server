@@ -1,2 +1,2 @@
-redis_data/dump.rdb
+redis_data/appendonlydir/
 logs/**
