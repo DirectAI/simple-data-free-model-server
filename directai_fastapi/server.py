@@ -29,8 +29,6 @@ from pydantic_models import (
 )
 from utils import (
     raise_if_cannot_open,
-    get_classifier_model_handle,
-    generate_random_classifier_scores
 )
 from modeling.distributed_backend import (
     deploy_classifier_backend_model,
@@ -157,10 +155,9 @@ async def classify_examples(
     exc_sub_labels_dict = loaded_config.get("exc_sub_labels_dict", None)
     controls = loaded_config.get("controls", None)
     augment_examples = loaded_config.get("augment_examples", True)
-    # TODO: Build model hanlde
-    get_classifier_model_handle()
-    scores = generate_random_classifier_scores(labels)
-    print(f"Got scores: {scores}")
+    
+    # TODO: run actual classifier model
+    scores = await app.state.classifier_handle.remote(None)
     
     return scores
 
