@@ -1,5 +1,11 @@
 import logging
-logging.basicConfig(filename='logs/example.log', encoding='utf-8', level=logging.INFO)
+
+logging.basicConfig(
+    filename='logs/local_fastapi.log',
+    format='%(asctime)s,%(msecs)03d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+    datefmt='%Y-%m-%d:%H:%M:%S',
+    level=logging.INFO
+)
 import os
 
 import json
