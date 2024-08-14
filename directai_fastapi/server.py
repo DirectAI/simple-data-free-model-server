@@ -163,7 +163,7 @@ async def classify_examples(
     inc_sub_labels_dict = loaded_config.get("inc_sub_labels_dict", None)
     exc_sub_labels_dict = loaded_config.get("exc_sub_labels_dict", None)
     controls = loaded_config.get("controls", None)
-    augment_examples = loaded_config.get("augment_examples", True)    
+    augment_examples = loaded_config.get("augment_examples", True)
     
     # TODO: run actual classifier model
     scores = await app.state.classifier_handle.remote(None)
