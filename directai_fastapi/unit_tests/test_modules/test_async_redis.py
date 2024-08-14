@@ -10,8 +10,6 @@ class TestAsyncRedisConnection(unittest.IsolatedAsyncioTestCase):
         real_redis_endpoint = grab_redis_endpoint()
         self.redis_connection = await redis.from_url(real_redis_endpoint)
         self.assertTrue(await self.redis_connection.ping())
-    
-    async def asyncTearDown(self) -> None:
         await self.redis_connection.aclose() # type: ignore [attr-defined]
 
 class TestBadAsyncRedisConnection(unittest.IsolatedAsyncioTestCase):
@@ -19,6 +17,22 @@ class TestBadAsyncRedisConnection(unittest.IsolatedAsyncioTestCase):
         bad_endpoint = "bad_endpoint"
         with self.assertRaises(ValueError):
             self.redis_connection = await redis.from_url(bad_endpoint)
+            
+class TestGoodDelete(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self) -> None:
+        real_redis_endpoint = grab_redis_endpoint()
+        self.redis_connection = await redis.from_url(real_redis_endpoint)
+    
+    async def test_good_delete(self) -> None:
+        key_name = "key_name"
+        key_val = "key_val"
+        
+        await self.redis_connection.set(key_name, key_val)
+        start_time = time.time()
+        await self.redis_connection.delete(key_name)
+        end_time = time.time()
+        latency = (end_time - start_time) * 1000  # Convert to milliseconds
+        self.assertTrue(latency < 5)
 
 class TestBadKeyGrab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
@@ -35,13 +49,11 @@ class TestBadKeyGrab(unittest.IsolatedAsyncioTestCase):
 class TestGoodWriteRead(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         real_redis_endpoint = grab_redis_endpoint()
-        self.redis_connection = await redis.from_url(real_redis_endpoint)
+        self.redis_connection = await redis.from_url(real_redis_endpoint+"?decode_responses=True")
         key_name = "key_name"
         await self.redis_connection.delete(key_name)
         
     async def test_good_write_read(self) -> None:
-        real_redis_endpoint = grab_redis_endpoint()
-        self.redis_connection = await redis.from_url(real_redis_endpoint+"?decode_responses=True")
         key_name = "key_name"
         key_val = "key_val"
         start_time = time.time()
