@@ -10,7 +10,8 @@ class TestAsyncRedisConnection(unittest.IsolatedAsyncioTestCase):
         real_redis_endpoint = grab_redis_endpoint()
         self.redis_connection = await redis.from_url(real_redis_endpoint)
         self.assertTrue(await self.redis_connection.ping())
-        await self.redis_connection.aclose()
+        await self.redis_connection.close()
+        # await self.redis_connection.aclose() # type: ignore [attr-defined]
 
 class TestBadAsyncRedisConnection(unittest.IsolatedAsyncioTestCase):
     async def test_bad_async_connection(self) -> None:
