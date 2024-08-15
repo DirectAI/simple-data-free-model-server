@@ -1,6 +1,0 @@
-2024-08-15:16:41:17,165 INFO     [/opt/conda/lib/python3.10/site-packages/ray/serve/_private/api.py:276] Started Serve in namespace "serve".
-2024-08-15:16:41:17,227 INFO     [/opt/conda/lib/python3.10/site-packages/ray/serve/_private/api.py:258] Connecting to existing Serve app in namespace "serve". New http options will not be applied.
-2024-08-15:16:41:17,227 WARNING  [/opt/conda/lib/python3.10/site-packages/ray/serve/_private/api.py:84] The new client HTTP config differs from the existing one in the following fields: ['port', 'location']. The new HTTP config is ignored.
-2024-08-15:16:41:19,243 INFO     [/opt/conda/lib/python3.10/site-packages/ray/serve/_private/client.py:491] Deployment 'ImageClassifier:t6lififc' is ready. component=serve deployment=ImageClassifier
-2024-08-15:16:41:19,247 INFO     [/opt/conda/lib/python3.10/site-packages/ray/serve/_private/api.py:258] Connecting to existing Serve app in namespace "serve". New http options will not be applied.
-2024-08-15:16:41:19,247 WARNING  [/opt/conda/lib/python3.10/site-packages/ray/serve/_private/api.py:84] The new client HTTP config differs from the existing one in the following fields: ['port', 'location']. The new HTTP config is ignored.
