@@ -22,20 +22,6 @@ class ObjectDetector:
         )
         return [[sdr]]
 
-# def generate_random_detector_scores(labels: List[str]) -> List[List[SingleDetectionResponse]]:
-#     to_return: List[SingleDetectionResponse] = []
-#     for l in labels:
-#         num_detections = random.randint(0, 5)
-#         for d_idx in range(num_detections):
-#             detection: Dict[str, Union[List[float], str, float]] = {
-#                 "tlbr": [random.uniform(0, 1000) for _ in range(4)],
-#                 "score": random.random(),
-#                 "class": l
-#             }
-#             to_return.append(SingleDetectionResponse(**detection))
-#     return [to_return]
-
-
 @serve.deployment
 class ImageClassifier:
     async def __call__(self, image: Image.Image) -> ClassifierResponse:
