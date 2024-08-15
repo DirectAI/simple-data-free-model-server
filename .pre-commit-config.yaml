@@ -1,22 +1,12 @@
 repos:
-  # - repo: local
-  #   hooks:
-  #     - id: mypy
-  #       name: mypy in Docker
-  #       entry: ./mypy.sh -b
-  #       language: system
-  #       pass_filenames: false
   - repo: https://github.com/psf/black
-    rev: 22.3.0  # Replace with the latest version
+    rev: 24.8.0
     hooks:
       - id: black
-  # - repo: https://github.com/pycqa/flake8
-  #   rev: 7.1.1
-  #   hooks:
-  #     - id: flake8
-  #       name: flake8
-  #       entry: flake8
-  #       language: python
-  #       types: [python]
-  #       args: ["--max-line-length=88"]
-  #       additional_dependencies: []
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy in docker
+        entry: ./mypy.sh -b
+        language: system
+        pass_filenames: false

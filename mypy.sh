@@ -1,12 +1,20 @@
 #!/bin/bash
 BUILD=false
 MYPY_FULL_APP=false
-MYPY_FULL_APP=false
+MYPY_TESTS=false
 
-while getopts "b" opt; do
+
+
+while getopts "bta" opt; do
   case $opt in
     b)
       BUILD=true
+      ;;
+    t)
+      MYPY_TESTS=true
+      ;;
+    a)
+      MYPY_FULL_APP=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -14,6 +22,12 @@ while getopts "b" opt; do
       ;;
   esac
 done
+
+if ! $MYPY_FULL_APP && ! $MYPY_TESTS; then
+  MYPY_FULL_APP=true
+  MYPY_TESTS=true
+fi
+
 
 build_app() {
     if $1; then
@@ -45,5 +59,9 @@ build_testing() {
     fi
 }
 
-build_app $BUILD
-build_testing $BUILD
+if $MYPY_FULL_APP; then
+    build_app $BUILD
+fi
+if $MYPY_TESTS; then
+    build_testing $BUILD
+fi
