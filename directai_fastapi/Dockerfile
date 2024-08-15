@@ -11,6 +11,7 @@ COPY pydantic_models.py .
 COPY server.py .
 COPY run.sh .
 COPY utils.py .
+COPY .mypy.ini .
 
 RUN mkdir unit_tests
 COPY unit_tests unit_tests
