@@ -34,7 +34,7 @@ build_app() {
         docker compose -f docker-compose.yml build
     fi
     echo "running mypy on local_fastapi"
-    fastapi_output=$(docker run --rm simple-data-free-model-server-local_fastapi:latest mypy .)
+    fastapi_output=$(docker run --rm simple-data-free-model-server-local_fastapi:latest mypy . --disallow-untyped-defs --disallow-incomplete-defs)
     echo "$fastapi_output"
     if echo "$fastapi_output" | grep -q "Success: no issues found"; then
         echo "local_fastapi looks good"
@@ -49,7 +49,7 @@ build_testing() {
         docker compose -f testing-docker-compose.yml build
     fi
     echo "running mypy on local_tests"
-    integration_testing_output=$(docker run --rm simple-data-free-model-server-tests:latest mypy /integration_tests)
+    integration_testing_output=$(docker run --rm simple-data-free-model-server-tests:latest mypy /integration_tests --disallow-untyped-defs --disallow-incomplete-defs)
     echo "$integration_testing_output"
     if echo "$integration_testing_output" | grep -q "Success: no issues found"; then
         echo "tests looks good"
