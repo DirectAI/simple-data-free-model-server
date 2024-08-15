@@ -20,7 +20,7 @@ services:
       - PYTHONUNBUFFERED=1
       - NVIDIA_VISIBLE_DEVICES=all
       - HF_HOME=/.cache/huggingface
-    # runtime: nvidia
+    runtime: nvidia
     volumes:
       - ./logs:/logs
     depends_on:
