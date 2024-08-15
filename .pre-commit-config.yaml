@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.5.1  # or the latest version of mypy
+    rev: v1.11.1  # or the latest version of mypy
     hooks:
       - id: mypy
         entry: ./mypy.sh
