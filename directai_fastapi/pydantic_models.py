@@ -42,12 +42,10 @@ class ClassifierDeploy(BaseModel):
         labels = [c.name for c in self.classifier_configs]
         inc_sub_labels_dict: dict[str, List[str]] = {c.name:c.examples_to_include for c in self.classifier_configs}
         exc_sub_labels_dict: dict[str, List[str]] = {c.name:c.examples_to_exclude for c in self.classifier_configs}
-        controls: List = []
         config_dict = {
             "labels": labels,
             "inc_sub_labels_dict": inc_sub_labels_dict,
             "exc_sub_labels_dict": exc_sub_labels_dict,
-            "controls": controls,
             "augment_examples": self.augment_examples
         }
         

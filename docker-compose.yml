@@ -23,6 +23,7 @@ services:
     runtime: nvidia
     volumes:
       - ./logs:/logs
+    shm_size: 10.24g  # because Ray complains if it's less
     depends_on:
       - local_redis
     extra_hosts:

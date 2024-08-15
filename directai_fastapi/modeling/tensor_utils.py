@@ -69,7 +69,7 @@ def image_bytes_to_tensor(image: bytes, image_size: tuple[int, int]) -> torch.Te
         # (plus likely using draft here leads to a more accurate resize operation)
         pil_image.draft("RGB", image_size)
     pil_image = pil_image.convert('RGB')
-    pil_image = pil_image.resize(image_size, Image.BICUBIC)
+    pil_image = pil_image.resize(image_size, Image.Resampling.BICUBIC)
     np_image = np.asarray(pil_image)
     tensor = torch.tensor(np_image).permute(2, 0, 1).unsqueeze(0)
     return tensor

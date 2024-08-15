@@ -17,18 +17,22 @@ class ZeroShotImageClassifierWithFeedback(nn.Module):
             max_text_batch_size: int = 256,
             max_image_batch_size: int = 256,
             device: torch.device|str = 'cuda',
-            lru_cache_size: int = 4096  # set to 0 to disable caching
+            lru_cache_size: int = 4096,  # set to 0 to disable caching
+            jit: bool = True,
+            fp16: bool = True
         ):
         super().__init__()
         
         self.device = torch.device(device) if type(device) is str else device
+        self.fp16 = fp16
         
         # TODO: just do create_model, not create_model_and_transforms
         self.model, _, _ = open_clip.create_model_and_transforms(
             base_model_name,
             pretrained=dataset_name,
-            jit=True,
-            image_resize_mode="squash"
+            jit=jit,
+            image_resize_mode="squash",
+            precision="fp16" if fp16 else "fp32"
         )
         self.tokenizer = open_clip.get_tokenizer(base_model_name)
         
@@ -66,6 +70,9 @@ class ZeroShotImageClassifierWithFeedback(nn.Module):
         image = image.float() / 255.0
         image -= self.img_mean
         image /= self.img_std
+        
+        if self.fp16:
+            image = image.half()
 
         feature_list = []
         for i in range(0, image.size(0), self.max_image_batch_size):
@@ -157,6 +164,8 @@ class ZeroShotImageClassifierWithFeedback(nn.Module):
         image_features = self.encode_image(image)
         
         exc_sub_labels_dict = {} if exc_sub_labels_dict is None else exc_sub_labels_dict
+        # filter out empty excs lists
+        exc_sub_labels_dict = {label: excs for label, excs in exc_sub_labels_dict.items() if len(excs) > 0}
         
         all_labels, all_labels_to_inds = self.squish_labels(labels, inc_sub_labels_dict, exc_sub_labels_dict)
         text_features = self.encode_text(all_labels, augment=augment_examples)

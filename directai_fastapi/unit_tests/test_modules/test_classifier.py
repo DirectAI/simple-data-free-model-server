@@ -15,7 +15,8 @@ class TestImageClassifier(unittest.TestCase):
             max_text_batch_size=256,
             max_image_batch_size=256,
             device='cuda:0',
-            lru_cache_size=4096
+            lru_cache_size=4096,
+            jit=False  # useful to speed up unit testing since throughput is not a concern, just start-up time
         )
         
         coke_bottle_filepath = "unit_tests/sample_data/coke_through_the_ages.jpeg"
