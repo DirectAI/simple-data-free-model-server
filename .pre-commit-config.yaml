@@ -4,3 +4,5 @@ repos:
     hooks:
       - id: mypy
         entry: ./mypy.sh
+        language: system
+        pass_filenames: false
