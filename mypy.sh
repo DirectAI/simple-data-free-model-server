@@ -1,3 +1,4 @@
+#!/bin/bash
 BUILD=false
 MYPY_FULL_APP=false
 MYPY_FULL_APP=false
