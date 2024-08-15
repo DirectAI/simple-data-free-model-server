@@ -1,5 +1,6 @@
 import os
 import time
+import sys
 import logging
 formatter = logging.Formatter(
     '%(asctime)s,%(msecs)03d %(levelname)-8s [%(pathname)s:%(lineno)d] %(message)s',
@@ -16,7 +17,13 @@ subdirs = [os.path.join(logs_dir, d) for d in os.listdir(logs_dir) if os.path.is
 latest_subdir = max(subdirs, key=os.path.getctime)
 
 # Update the logging configuration to write to the most recently created directory
-log_filename = os.path.join(latest_subdir, f"fastapi_runtime_{start_time}.log")
+main_file = sys.modules['__main__'].__file__
+if main_file is None:
+    log_filename = ""
+elif isinstance(main_file, str):
+    main_file = main_file.replace('/', '_')
+log_filename = os.path.join(latest_subdir, f"{main_file}_runtime.log")
+# log_filename = os.path.join(latest_subdir, f"fastapi_runtime_{start_time}.log")
 logging.basicConfig(
     filename=log_filename,
     format=formatter._fmt,
