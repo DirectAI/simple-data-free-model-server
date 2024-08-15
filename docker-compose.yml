@@ -24,7 +24,7 @@ services:
       - directai_fastapi/.env
     runtime: nvidia
     volumes:
-      - ./directai_fastapi/logs:/directai_fastapi/logs
+      - ./logs:/directai_fastapi/logs
     depends_on:
       - local_redis
     extra_hosts:
