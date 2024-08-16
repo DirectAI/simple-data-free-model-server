@@ -22,6 +22,17 @@ class TestGoodDelete(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         real_redis_endpoint = grab_redis_endpoint()
         self.redis_connection = await redis.from_url(real_redis_endpoint)
+    
+    async def test_good_delete(self) -> None:
+        key_name = "key_name"
+        key_val = "key_val"
+
+        await self.redis_connection.set(key_name, key_val)
+        start_time = time.time()
+        await self.redis_connection.delete(key_name)
+        end_time = time.time()
+        latency = (end_time - start_time) * 1000  # Convert to milliseconds
+        self.assertTrue(latency < 5)
 
 class TestBadKeyGrab(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
