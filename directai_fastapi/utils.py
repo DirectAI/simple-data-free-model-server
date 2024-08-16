@@ -10,7 +10,6 @@ from typing import (
     List, 
     Union
 )
-from pydantic_models import SingleDetectionResponse
 
 def validate_can_open_with_opencv(image: bytes) -> bool:
     try:
