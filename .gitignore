@@ -1,4 +1,3 @@
 redis_data/appendonlydir/
 redis_data/dump.rdb
 logs/
-directai_fastapi/.env
