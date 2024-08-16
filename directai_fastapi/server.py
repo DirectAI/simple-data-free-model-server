@@ -110,10 +110,7 @@ async def exception_handler(request: Request, exc: HTTPException) -> JSONRespons
     include_in_schema=True, 
     responses={
         200: {"model": DeployResponse},
-        401: {"model": HTTPExceptionResponse},
-        403: {"model": HTTPExceptionResponse},
         422: {"model": HTTPExceptionResponse},
-        429: {"model": HTTPExceptionResponse},
         502: {"model": HTTPExceptionResponse}
     }
 )
@@ -133,10 +130,7 @@ async def deploy_classifier(request: Request, config: ClassifierDeploy) -> dict:
     responses={
         200: {"model": ClassifierResponse},
         400: {"model": HTTPExceptionResponse},
-        401: {"model": HTTPExceptionResponse},
-        403: {"model": HTTPExceptionResponse},
         422: {"model": HTTPExceptionResponse},
-        429: {"model": HTTPExceptionResponse},
         502: {"model": HTTPExceptionResponse}
     }
 )
@@ -168,10 +162,7 @@ async def classify_examples(
     include_in_schema=True, 
     responses={
         200: {"model": DeployResponse},
-        401: {"model": HTTPExceptionResponse},
-        403: {"model": HTTPExceptionResponse},
         422: {"model": HTTPExceptionResponse},
-        429: {"model": HTTPExceptionResponse},
         502: {"model": HTTPExceptionResponse}
     }
 )
@@ -191,10 +182,7 @@ async def deploy_detector(request: Request, config: DetectorDeploy) -> dict:
     responses={
         200: {"model": List[List[SingleDetectionResponse]]},
         400: {"model": HTTPExceptionResponse},
-        401: {"model": HTTPExceptionResponse},
-        403: {"model": HTTPExceptionResponse},
         422: {"model": HTTPExceptionResponse},
-        429: {"model": HTTPExceptionResponse},
         502: {"model": HTTPExceptionResponse}
     }
 )
