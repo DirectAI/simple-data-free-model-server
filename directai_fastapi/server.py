@@ -1,3 +1,4 @@
+from logging_config import logger
 import os
 import json
 import random
@@ -30,12 +31,12 @@ from pydantic_models import (
     SingleDetectionResponse,
     VerboseDetectorConfig
 )
-from utils import (
-    raise_if_cannot_open,
-)
 from modeling.distributed_backend import (
     deploy_classifier_backend_model,
     deploy_detector_backend_model
+)
+from utils import (
+    raise_if_cannot_open
 )
 
 app = FastAPI()
@@ -73,7 +74,7 @@ async def startup_event() -> None:
     app.state.classifier_handle = deploy_classifier_backend_model()
     app.state.detector_handle = deploy_detector_backend_model()
     app.state.config_cache = await redis.from_url(f"{grab_redis_endpoint()}?decode_responses=True")
-    print(f"Ping successful: {await app.state.config_cache.ping()}")
+    logger.info(f"Ping successful: {await app.state.config_cache.ping()}")
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
@@ -82,7 +83,7 @@ async def shutdown_event() -> None:
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
-    print(f"{request}: {exc_str}")
+    logger.info(f"{request}: {exc_str}")
     return JSONResponse(
         status_code = status.HTTP_422_UNPROCESSABLE_ENTITY,
         content = {
@@ -95,7 +96,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(HTTPException)
 async def exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     exc_str = f'{exc.detail}'.replace('\n', ' ').replace('   ', ' ')
-    print(f"{request}: {exc_str}")
+    logger.info(f"{request}: {exc_str}")
     return JSONResponse(
         status_code = exc.status_code,
         content = {
@@ -121,7 +122,7 @@ async def deploy_classifier(request: Request, config: ClassifierDeploy) -> dict:
     Optionally, provide the `deployed_id` of an existing classifier to modify its configuration in-place.
     """
     deploy_response = await config.save_configuration(config_cache = app.state.config_cache)
-    print(f"Deployed classifier w/ ID: {deploy_response['deployed_id']}")
+    logger.info(f"Deployed classifier w/ ID: {deploy_response['deployed_id']}")
     return deploy_response
 
 @app.post(
@@ -142,7 +143,7 @@ async def classify_examples(
     """Get classification score from deployed model"""
     image = data.file.read()
     raise_if_cannot_open(image)
-    print(f"Got request for {deployed_id}, which is a classifier model")
+    logger.info(f"Got request for {deployed_id}, which is a classifier model")
     loaded_config = await grab_config(deployed_id)
     labels = loaded_config["labels"]
     assert isinstance(labels, list), "Labels should be a list of strings"
@@ -153,6 +154,7 @@ async def classify_examples(
     
     # TODO: run actual classifier model
     scores = await app.state.classifier_handle.remote(None)
+    logger.info(f"Got scores: {scores}")
     
     return scores
 
