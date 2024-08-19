@@ -1,3 +1,4 @@
+from logging_config import logger
 import os
 import json
 import random
@@ -13,13 +14,11 @@ from pydantic_models import (
     ClassifierDeploy,
     ClassifierResponse,
 )
-from utils import (
-    raise_if_cannot_open,
-)
 from modeling.distributed_backend import (
     deploy_classifier_backend_model,
     deploy_detector_backend_model,
 )
+from utils import raise_if_cannot_open
 
 app = FastAPI()
 
@@ -139,7 +138,7 @@ async def classify_examples(
     """Get classification score from deployed model"""
     image = data.file.read()
     raise_if_cannot_open(image)
-    print(f"Got request for {deployed_id}, which is a classifier model")
+    logger.info(f"Got request for {deployed_id}, which is a classifier model")
     loaded_config = await grab_config(deployed_id)
     labels = loaded_config["labels"]
     assert isinstance(labels, list), "Labels should be a list of strings"
@@ -150,6 +149,7 @@ async def classify_examples(
 
     # TODO: run actual classifier model
     scores = await app.state.classifier_handle.remote(None)
+    logger.info(f"Got scores: {scores}")
 
     return scores
 
