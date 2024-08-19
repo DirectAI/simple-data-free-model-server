@@ -49,7 +49,11 @@ main_file = main_file.replace("/", "_")
 log_filename = os.path.join(latest_subdir, f"{main_file}_runtime.log")
 assert isinstance(formatter._fmt, str)
 logging.basicConfig(
+    filename=log_filename,
     format=formatter._fmt,
+    datefmt=formatter.datefmt,
+    filemode="a",
+    level=logging.INFO,
 )
 
 logger = logging.getLogger(__name__)
