@@ -7,6 +7,7 @@ RUN apt-get install libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 -y
 RUN apt-get install cmake build-essential -y
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+COPY logging_config.py .
 COPY pydantic_models.py .
 COPY server.py .
 COPY run.sh .
