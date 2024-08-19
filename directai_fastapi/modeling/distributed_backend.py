@@ -24,9 +24,6 @@ class ObjectDetector:
             "class": "dog",
         }
         sdr = SingleDetectionResponse.parse_obj(single_detection)
-        # sdr = SingleDetectionResponse(
-        #     tlbr=[0.0, 0.0, 1.0, 1.0], score=random.random(), class_="dog"
-        # )
         return [[sdr]]
 
 
