@@ -13,9 +13,12 @@ from pydantic_models import (
     HTTPExceptionResponse,
     ClassifierDeploy,
     ClassifierResponse,
+    DetectorDeploy,
+    SingleDetectionResponse,
+    VerboseDetectorConfig,
 )
-from modeling.distributed_backend import deploy_backend_models
 from utils import raise_if_cannot_open
+from modeling.distributed_backend import deploy_backend_models
 
 app = FastAPI()
 
@@ -95,10 +98,7 @@ async def exception_handler(request: Request, exc: HTTPException) -> JSONRespons
     include_in_schema=True,
     responses={
         200: {"model": DeployResponse},
-        401: {"model": HTTPExceptionResponse},
-        403: {"model": HTTPExceptionResponse},
         422: {"model": HTTPExceptionResponse},
-        429: {"model": HTTPExceptionResponse},
         502: {"model": HTTPExceptionResponse},
     },
 )
@@ -121,10 +121,7 @@ async def deploy_classifier(request: Request, config: ClassifierDeploy) -> dict:
     responses={
         200: {"model": ClassifierResponse},
         400: {"model": HTTPExceptionResponse},
-        401: {"model": HTTPExceptionResponse},
-        403: {"model": HTTPExceptionResponse},
         422: {"model": HTTPExceptionResponse},
-        429: {"model": HTTPExceptionResponse},
         502: {"model": HTTPExceptionResponse},
     },
 )
@@ -153,12 +150,54 @@ async def classify_examples(
     return scores
 
 
-@app.get("/deploy_detector")
-def deploy_detector() -> dict:
-    return {"message": "Hello, World!"}
+@app.post(
+    "/deploy_detector",
+    include_in_schema=True,
+    responses={
+        200: {"model": DeployResponse},
+        422: {"model": HTTPExceptionResponse},
+        502: {"model": HTTPExceptionResponse},
+    },
+)
+async def deploy_detector(request: Request, config: DetectorDeploy) -> dict:
+    """
+    Deploy New or Edit Existing Detector with Natural Language. We expect at least one class definition.
+
+    Optionally, provide the `deployed_id` of an existing object detector to modify its configuration in-place.
+    """
+    deploy_response = await config.save_configuration(
+        config_cache=app.state.config_cache
+    )
+    print(f"Deployed detector w/ ID: {deploy_response['deployed_id']}")
+    return deploy_response
 
 
-@app.get("/detect")
-async def detect() -> dict:
+@app.post(
+    "/detect",
+    include_in_schema=True,
+    responses={
+        200: {"model": List[List[SingleDetectionResponse]]},
+        400: {"model": HTTPExceptionResponse},
+        422: {"model": HTTPExceptionResponse},
+        502: {"model": HTTPExceptionResponse},
+    },
+)
+async def run_detector(
+    request: Request,
+    deployed_id: str,
+    data: UploadFile = File(),
+) -> List[List[SingleDetectionResponse]]:
+    """Get detections from deployed model"""
+    print(f"Got request for {deployed_id}, which is a detector model")
+    image = data.file.read()
+    raise_if_cannot_open(image)
+    detector_configs = await grab_config(deployed_id)
+    ## NOTE: This might break if we have embedded BaseModel-inheriting objects inside the json object
+    verbose_detector_configs = [
+        VerboseDetectorConfig(**json.loads(d) if isinstance(d, str) else d)
+        for d in detector_configs["detector_configs"]
+    ]
+    print(f"augment_examples: {detector_configs.get('augment_examples', None)}")
+
     bboxes = await app.state.detector_handle.remote(None)
-    return {"bboxes": bboxes}
+    return bboxes

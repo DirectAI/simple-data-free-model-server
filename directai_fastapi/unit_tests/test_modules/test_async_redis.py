@@ -26,7 +26,7 @@ class TestGoodDelete(unittest.IsolatedAsyncioTestCase):
     async def test_good_delete(self) -> None:
         key_name = "key_name"
         key_val = "key_val"
-        
+
         await self.redis_connection.set(key_name, key_val)
         start_time = time.time()
         await self.redis_connection.delete(key_name)

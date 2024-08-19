@@ -1,3 +1,4 @@
+import random
 from ray import serve
 from ray.serve import Deployment
 from ray.serve.handle import DeploymentHandle
@@ -5,7 +6,8 @@ from PIL import Image
 import torch
 from torch.nn import functional as F
 
-from pydantic_models import ClassifierResponse
+from typing import List
+from pydantic_models import ClassifierResponse, SingleDetectionResponse
 from modeling.image_classifier import ZeroShotImageClassifierWithFeedback
 
 
@@ -14,9 +16,15 @@ serve.start(http_options={"port": 8100})
 
 @serve.deployment
 class ObjectDetector:
-    async def __call__(self, image: Image.Image) -> list[list[float]]:
+    async def __call__(self, image: Image.Image) -> List[List[SingleDetectionResponse]]:
         # Placeholder implementation
-        return [[0.0, 0.0, 1.0, 1.0]]
+        single_detection = {
+            "tlbr": [0.0, 0.0, 1.0, 1.0],
+            "score": random.random(),
+            "class": "dog",
+        }
+        sdr = SingleDetectionResponse.parse_obj(single_detection)
+        return [[sdr]]
 
 
 @serve.deployment
