@@ -22,7 +22,8 @@ def compute_kl_divergence_based_classification_loss(response1: Dict[str, Any] , 
     kl_divergence = np.sum(scores1 * np.log(scores1 / scores2))
     return kl_divergence
 
-class TestClassify(unittest.TestCase):
+
+class TestClassifyDeploy(unittest.TestCase):
     def __init__(self, methodName: str ='runTest'):
         super().__init__(methodName=methodName)
         self.endpoint = f"http://{FASTAPI_HOST}:8000/"
@@ -145,8 +146,14 @@ class TestClassify(unittest.TestCase):
         response_json = response.json()
         self.assertTrue('deployed_id' in response_json)
         self.assertEqual(response_json['message'], "New model deployed.")
-    
-    def test_classify_filler(self) -> None:
+
+
+class TestClassifyInference(unittest.TestCase):
+    def __init__(self, methodName: str ='runTest'):
+        super().__init__(methodName=methodName)
+        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
+        # here we assume that deploy has been tested and works
+        # so we can generate a fixed deploy id for testing
         body = {
             "classifier_configs": [
                 {
@@ -165,40 +172,14 @@ class TestClassify(unittest.TestCase):
                 }
             ]
         }
-        response = requests.post(
+        deploy_response = requests.post(
             self.endpoint+"deploy_classifier",
             json=body
         )
-        response_json = response.json()
-        
-        sample_deployed_id = response_json['deployed_id']
-        
-        sample_fp = "sample_data/coke_through_the_ages.jpeg"
-        with open(sample_fp, 'rb') as f:
-            file_data = f.read()
-        files = {
-            'data': (sample_fp, file_data, "image/jpg"),
-        }
-        params = {
-            'deployed_id': sample_deployed_id
-        }
-        response = requests.post(
-            self.endpoint+"classify",
-            params=params,
-            files=files
-        )
-        self.assertEqual(response.status_code, 200)
-        response_json = response.json()
-        
-        self.assertIn('scores', response_json)
-        self.assertIn('pred', response_json)
-        self.assertIn('raw_scores', response_json)
-        
-        self.assertEqual(response_json['pred'], 'dog')
+        deploy_response_json = deploy_response.json()
+        self.sample_deployed_id = deploy_response_json['deployed_id']
     
-    @unittest.skip("classifier isn't built yet")
     def test_classify(self) -> None:
-        sample_deployed_id = "b5d1bdec-3bf3-4632-a011-538384d5bcb1"
         sample_fp = "sample_data/coke_through_the_ages.jpeg"
         with open(sample_fp, 'rb') as f:
             file_data = f.read()
@@ -206,7 +187,7 @@ class TestClassify(unittest.TestCase):
             'data': (sample_fp, file_data, "image/jpg"),
         }
         params = {
-            'deployed_id': sample_deployed_id
+            'deployed_id': self.sample_deployed_id
         }
         expected_response = {
             'scores': {
@@ -236,14 +217,13 @@ class TestClassify(unittest.TestCase):
         )
     
     def test_classify_malformatted_image(self) -> None:
-        sample_deployed_id = "b5d1bdec-3bf3-4632-a011-538384d5bcb1"
         sample_fp = "bad_file_path.suffix"
         file_data =  b"This is not an image file"
         files = {
             'data': (sample_fp, file_data, "image/jpg"),
         }
         params = {
-            'deployed_id': sample_deployed_id
+            'deployed_id': self.sample_deployed_id
         }
         response = requests.post(
             self.endpoint+"classify",
@@ -258,14 +238,13 @@ class TestClassify(unittest.TestCase):
         )
     
     def test_classify_empty_image(self) -> None:
-        sample_deployed_id = "b5d1bdec-3bf3-4632-a011-538384d5bcb1"
         sample_fp = "bad_file_path.suffix"
         file_data =  b""
         files = {
             'data': (sample_fp, file_data, "image/jpg"),
         }
         params = {
-            'deployed_id': sample_deployed_id
+            'deployed_id': self.sample_deployed_id
         }
         response = requests.post(
             self.endpoint+"classify",
@@ -280,7 +259,6 @@ class TestClassify(unittest.TestCase):
         )
     
     def test_classify_truncated_image(self) -> None:
-        sample_deployed_id = "b5d1bdec-3bf3-4632-a011-538384d5bcb1"
         sample_fp = "sample_data/coke_through_the_ages.jpeg"
         with open(sample_fp, 'rb') as f:
             file_data = f.read()
@@ -289,7 +267,7 @@ class TestClassify(unittest.TestCase):
             'data': (sample_fp, file_data, "image/jpg"),
         }
         params = {
-            'deployed_id': sample_deployed_id
+            'deployed_id': self.sample_deployed_id
         }
         response = requests.post(
             self.endpoint+"classify",
@@ -303,7 +281,6 @@ class TestClassify(unittest.TestCase):
             "Invalid image received, unable to open."
         )
     
-    @unittest.skip("classifier isn't built yet")
     def test_deploy_and_classify(self) -> None:
         # Starting Deploy Call
         body = {
@@ -370,7 +347,6 @@ class TestClassify(unittest.TestCase):
             2e-5
         )
     
-    @unittest.skip("classifier isn't built yet")
     def test_deploy_and_classify_without_augment_examples(self) -> None:        
         # deploy without augment_examples
         body = {

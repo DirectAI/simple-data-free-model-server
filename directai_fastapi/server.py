@@ -14,10 +14,7 @@ from pydantic_models import (
     ClassifierDeploy,
     ClassifierResponse,
 )
-from modeling.distributed_backend import (
-    deploy_classifier_backend_model,
-    deploy_detector_backend_model,
-)
+from modeling.distributed_backend import deploy_backend_models
 from utils import raise_if_cannot_open
 
 app = FastAPI()
@@ -55,8 +52,7 @@ async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    app.state.classifier_handle = deploy_classifier_backend_model()
-    app.state.detector_handle = deploy_detector_backend_model()
+    app.state.detector_handle, app.state.classifier_handle = deploy_backend_models()
     app.state.config_cache = await redis.from_url(
         f"{grab_redis_endpoint()}?decode_responses=True"
     )
@@ -144,12 +140,15 @@ async def classify_examples(
     assert isinstance(labels, list), "Labels should be a list of strings"
     inc_sub_labels_dict = loaded_config.get("inc_sub_labels_dict", None)
     exc_sub_labels_dict = loaded_config.get("exc_sub_labels_dict", None)
-    controls = loaded_config.get("controls", None)
     augment_examples = loaded_config.get("augment_examples", True)
 
-    # TODO: run actual classifier model
-    scores = await app.state.classifier_handle.remote(None)
-    logger.info(f"Got scores: {scores}")
+    scores = await app.state.classifier_handle.remote(
+        image,
+        labels=labels,
+        inc_sub_labels_dict=inc_sub_labels_dict,
+        exc_sub_labels_dict=exc_sub_labels_dict,
+        augment_examples=augment_examples,
+    )
 
     return scores
 
