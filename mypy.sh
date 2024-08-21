@@ -73,5 +73,5 @@ if $MYPY_FULL_APP; then
     build_app $BUILD
 fi
 if $MYPY_TESTS; then
-    build_testing
+    build_testing $BUILD
 fi
