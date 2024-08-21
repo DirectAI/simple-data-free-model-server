@@ -42,6 +42,16 @@ build_app() {
         echo "local_fastapi failed. exiting."
         exit 1
     fi
+
+    echo "running mypy on local_gradio"
+    gradio_output=$(sudo docker run --rm simple-data-free-model-server_local_gradio:latest mypy . --disallow-untyped-defs --disallow-incomplete-defs)
+    echo "$gradio_output"
+    if echo "$gradio_output" | grep -q "Success: no issues found"; then
+        echo "local_gradio looks good"
+    else
+        echo "local_gradio failed. exiting."
+        exit 1
+    fi
 }
 
 build_testing() {
@@ -63,5 +73,5 @@ if $MYPY_FULL_APP; then
     build_app $BUILD
 fi
 if $MYPY_TESTS; then
-    build_testing $BUILD
+    build_testing
 fi

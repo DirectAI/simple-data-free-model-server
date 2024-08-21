@@ -1,0 +1,5 @@
+gradio==4.41.0
+numpy==1.26.3
+mypy==1.11.1
+pillow==9.2.0
+types-Pillow==9.2.0

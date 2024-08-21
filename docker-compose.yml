@@ -30,6 +30,17 @@ services:
       - local_redis
     extra_hosts:
       - "host.docker.internal:host-gateway"
+  local_gradio:
+    build: gradio/
+    networks:
+      - deploy_network
+    ports: 
+      - 7860:7860
+    depends_on:
+      - local_fastapi
+    container_name: local_gradio
+    environment:
+      - PYTHONUNBUFFERED=1
 
 networks:
   deploy_network:
