@@ -5,6 +5,8 @@ from functools import partial
 from typing import Union, Tuple
 from PIL import Image
 
+from modeling import deploy_classifier, get_classifier_results
+
 # to add later maybe
 # my_include {border: 2px solid green !important}
 # my_exclude {border: 2px solid red !important}
@@ -41,7 +43,11 @@ with gr.Blocks(css=css) as demo:
                 add_btn.click(
                     lambda x: x
                     + [
-                        {"label": f"class_{len(x)}", "to_include": [], "to_exclude": []}
+                        {
+                            "name": f"class_{len(x)}",
+                            "examples_to_include": [],
+                            "examples_to_exclude": [],
+                        }
                     ],
                     class_states,
                     class_states,
@@ -61,9 +67,11 @@ with gr.Blocks(css=css) as demo:
                         class_name: str,
                         class_states_val: list = class_states_val,
                     ) -> list:
-                        class_states_val[class_idx]["label"] = class_name
-                        if len(class_states_val[class_idx]["to_include"]) == 0:
-                            class_states_val[class_idx]["to_include"] = [class_name]
+                        class_states_val[class_idx]["name"] = class_name
+                        if len(class_states_val[class_idx]["examples_to_include"]) == 0:
+                            class_states_val[class_idx]["examples_to_include"] = [
+                                class_name
+                            ]
                         return class_states_val
 
                     def update_include_example(
@@ -72,7 +80,7 @@ with gr.Blocks(css=css) as demo:
                         label_name: str,
                         class_states_val: list = class_states_val,
                     ) -> None:
-                        class_states_val[class_idx]["to_include"][
+                        class_states_val[class_idx]["examples_to_include"][
                             include_idx
                         ] = label_name
 
@@ -82,7 +90,7 @@ with gr.Blocks(css=css) as demo:
                         label_name: str,
                         class_states_val: list = class_states_val,
                     ) -> None:
-                        class_states_val[class_idx]["to_exclude"][
+                        class_states_val[class_idx]["examples_to_exclude"][
                             exclude_idx
                         ] = label_name
 
@@ -95,11 +103,11 @@ with gr.Blocks(css=css) as demo:
                         # We expect `type_of_example` to be "to_include" or "to_exclude"
                         # We expect `change_key` to be "increment" or "decrement"
                         if change_key == "increment":
-                            if type_of_example == "to_include":
+                            if type_of_example == "examples_to_include":
                                 class_states_val[class_idx][type_of_example].append(
                                     f"to include in class {class_idx}"
                                 )
-                            elif type_of_example == "to_exclude":
+                            elif type_of_example == "examples_to_exclude":
                                 class_states_val[class_idx][type_of_example].append(
                                     f"to exclude from class {class_idx}"
                                 )
@@ -110,9 +118,9 @@ with gr.Blocks(css=css) as demo:
                             )
                         return class_states_val, class_idx, True
 
-                    class_label = class_states_val[i]["label"]
-                    to_include_list = class_states_val[i]["to_include"]
-                    to_exclude_list = class_states_val[i]["to_exclude"]
+                    class_label = class_states_val[i]["name"]
+                    to_include_list = class_states_val[i]["examples_to_include"]
+                    to_exclude_list = class_states_val[i]["examples_to_exclude"]
 
                     with gr.Group(class_label, elem_id=f"tab_{i}"):
                         box = gr.Textbox(
@@ -140,7 +148,7 @@ with gr.Blocks(css=css) as demo:
                                         partial(
                                             change_example_count,
                                             i,
-                                            "to_include",
+                                            "examples_to_include",
                                             "increment",
                                         ),
                                         None,
@@ -155,7 +163,7 @@ with gr.Blocks(css=css) as demo:
                                         partial(
                                             change_example_count,
                                             i,
-                                            "to_include",
+                                            "examples_to_include",
                                             "decrement",
                                         ),
                                         None,
@@ -183,7 +191,7 @@ with gr.Blocks(css=css) as demo:
                                         partial(
                                             change_example_count,
                                             i,
-                                            "to_exclude",
+                                            "examples_to_exclude",
                                             "increment",
                                         ),
                                         None,
@@ -198,7 +206,7 @@ with gr.Blocks(css=css) as demo:
                                         partial(
                                             change_example_count,
                                             i,
-                                            "to_exclude",
+                                            "examples_to_exclude",
                                             "decrement",
                                         ),
                                         None,
@@ -234,12 +242,9 @@ with gr.Blocks(css=css) as demo:
             def placeholder_fn(
                 to_display: Union[Image.Image, np.ndarray], set_of_classes: list
             ) -> dict:
-                n = len(set_of_classes)
-                random_vector = np.random.rand(n)
-                normalized_vector = random_vector / random_vector.sum()
-                return {
-                    a["label"]: b for a, b in zip(set_of_classes, normalized_vector)
-                }
+                deployed_id = deploy_classifier(set_of_classes)
+                classify_results = get_classifier_results(to_display, deployed_id)
+                return classify_results
 
             img_to_display = gr.Image()
             to_output = gr.Label()

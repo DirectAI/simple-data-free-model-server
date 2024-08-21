@@ -1,21 +1,21 @@
 version: '2.3'
 services:
-  local_redis:
+  local_redis_ben:
     build: redis_data/
-    container_name: local_redis
+    container_name: local_redis_ben
     ports:
       - 6379:6379
     volumes:
       - ./redis_data/:/data
     networks:
       - deploy_network
-  local_fastapi:
+  local_fastapi_ben:
     build: directai_fastapi/
     ports: 
       - 8000:8000
     networks:
       - deploy_network
-    container_name: local_fastapi
+    container_name: local_fastapi_ben
     environment:
       - PYTHONUNBUFFERED=1
       - NVIDIA_VISIBLE_DEVICES=all
@@ -27,18 +27,18 @@ services:
       - ./logs:/directai_fastapi/logs
     shm_size: 10.24g  # because Ray complains if it's less
     depends_on:
-      - local_redis
+      - local_redis_ben
     extra_hosts:
       - "host.docker.internal:host-gateway"
-  local_gradio:
+  local_gradio_ben:
     build: gradio/
     networks:
       - deploy_network
     ports: 
       - 7860:7860
     depends_on:
-      - local_fastapi
-    container_name: local_gradio
+      - local_fastapi_ben
+    container_name: local_gradio_ben
     environment:
       - PYTHONUNBUFFERED=1
 

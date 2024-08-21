@@ -34,7 +34,7 @@ build_app() {
         sudo docker-compose -f docker-compose.yml build
     fi
     echo "running mypy on local_fastapi"
-    fastapi_output=$(sudo docker run --rm simple-data-free-model-server_local_fastapi:latest mypy . --disallow-untyped-defs --disallow-incomplete-defs)
+    fastapi_output=$(sudo docker run --rm simple-data-free-model-server_local_fastapi_ben:latest mypy . --disallow-untyped-defs --disallow-incomplete-defs)
     echo "$fastapi_output"
     if echo "$fastapi_output" | grep -q "Success: no issues found"; then
         echo "local_fastapi looks good"
@@ -44,7 +44,7 @@ build_app() {
     fi
 
     echo "running mypy on local_gradio"
-    gradio_output=$(sudo docker run --rm simple-data-free-model-server_local_gradio:latest mypy . --disallow-untyped-defs --disallow-incomplete-defs)
+    gradio_output=$(sudo docker run --rm simple-data-free-model-server_local_gradio_ben:latest mypy . --disallow-untyped-defs --disallow-incomplete-defs)
     echo "$gradio_output"
     if echo "$gradio_output" | grep -q "Success: no issues found"; then
         echo "local_gradio looks good"
