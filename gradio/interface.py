@@ -1,19 +1,20 @@
 import json
-import numpy as np
+
 import gradio as gr  # type: ignore[import-untyped]
 from functools import partial
-from typing import Union, Tuple
-from PIL import Image
 
-from modeling import deploy_classifier, get_classifier_results
 
-# to add later maybe
-# my_include {border: 2px solid green !important}
-# my_exclude {border: 2px solid red !important}
+from utils import (
+    upload_file,
+    update_class_label,
+    update_include_example,
+    update_exclude_example,
+    change_example_count,
+    deploy_and_infer,
+)
 
 css = """
-#my_accordion {background-color: #0B0F19}
-.feedback textarea {font-size: 24px !important}
+#configuration_accordion {background-color: #0B0F19}
 """
 
 with gr.Blocks(css=css) as demo:
@@ -21,14 +22,9 @@ with gr.Blocks(css=css) as demo:
     current_class_idx = gr.State(0)
     current_accordion_open = gr.State(False)
 
-    def upload_file(bytes: bytes) -> Union[dict, list]:
-        json_data = json.loads(bytes.decode("utf-8"))
-        print(json_data)
-        return json_data
-
     with gr.Row():
         with gr.Column():
-            with gr.Accordion("classifier definition", open=True):
+            with gr.Group("classifier definition"):
                 json_upload_button = gr.UploadButton(
                     "Import JSON",
                     file_count="single",
@@ -61,63 +57,6 @@ with gr.Blocks(css=css) as demo:
                 count_val = len(class_states_val)
 
                 for i in range(count_val):
-
-                    def update_class_label(
-                        class_idx: int,
-                        class_name: str,
-                        class_states_val: list = class_states_val,
-                    ) -> list:
-                        class_states_val[class_idx]["name"] = class_name
-                        if len(class_states_val[class_idx]["examples_to_include"]) == 0:
-                            class_states_val[class_idx]["examples_to_include"] = [
-                                class_name
-                            ]
-                        return class_states_val
-
-                    def update_include_example(
-                        class_idx: int,
-                        include_idx: int,
-                        label_name: str,
-                        class_states_val: list = class_states_val,
-                    ) -> None:
-                        class_states_val[class_idx]["examples_to_include"][
-                            include_idx
-                        ] = label_name
-
-                    def update_exclude_example(
-                        class_idx: int,
-                        exclude_idx: int,
-                        label_name: str,
-                        class_states_val: list = class_states_val,
-                    ) -> None:
-                        class_states_val[class_idx]["examples_to_exclude"][
-                            exclude_idx
-                        ] = label_name
-
-                    def change_example_count(
-                        class_idx: int,
-                        type_of_example: str,
-                        change_key: str,
-                        class_states_val: list = class_states_val,
-                    ) -> Tuple[list, int, bool]:
-                        # We expect `type_of_example` to be "to_include" or "to_exclude"
-                        # We expect `change_key` to be "increment" or "decrement"
-                        if change_key == "increment":
-                            if type_of_example == "examples_to_include":
-                                class_states_val[class_idx][type_of_example].append(
-                                    f"to include in class {class_idx}"
-                                )
-                            elif type_of_example == "examples_to_exclude":
-                                class_states_val[class_idx][type_of_example].append(
-                                    f"to exclude from class {class_idx}"
-                                )
-
-                        elif change_key == "decrement":
-                            class_states_val[class_idx][type_of_example] = (
-                                class_states_val[class_idx][type_of_example][:-1]
-                            )
-                        return class_states_val, class_idx, True
-
                     class_label = class_states_val[i]["name"]
                     to_include_list = class_states_val[i]["examples_to_include"]
                     to_exclude_list = class_states_val[i]["examples_to_exclude"]
@@ -131,17 +70,15 @@ with gr.Blocks(css=css) as demo:
                         )
                         box.submit(
                             fn=partial(update_class_label, i),
-                            inputs=[box],
+                            inputs=[box, class_states],
                             outputs=[class_states],
                         )
                         with gr.Accordion(
                             "advanced configuration",
-                            elem_id="my_accordion",
+                            elem_id="configuration_accordion",
                             open=i == class_idx and is_accordion_open,
                         ):
-                            with gr.Accordion(
-                                "examples to include", elem_id="my_include", open=True
-                            ):
+                            with gr.Accordion("examples to include", open=True):
                                 with gr.Row():
                                     add_inc_example_btn = gr.Button("Add Example")
                                     add_inc_example_btn.click(
@@ -151,7 +88,7 @@ with gr.Blocks(css=css) as demo:
                                             "examples_to_include",
                                             "increment",
                                         ),
-                                        None,
+                                        [class_states],
                                         [
                                             class_states,
                                             current_class_idx,
@@ -166,7 +103,7 @@ with gr.Blocks(css=css) as demo:
                                             "examples_to_include",
                                             "decrement",
                                         ),
-                                        None,
+                                        [class_states],
                                         [
                                             class_states,
                                             current_class_idx,
@@ -179,12 +116,10 @@ with gr.Blocks(css=css) as demo:
                                     )
                                     curr_inc.submit(
                                         fn=partial(update_include_example, i, j),
-                                        inputs=[curr_inc],
+                                        inputs=[curr_inc, class_states],
                                     )
 
-                            with gr.Accordion(
-                                "examples to exclude", elem_id="my_exclude", open=True
-                            ):
+                            with gr.Accordion("examples to exclude", open=True):
                                 with gr.Row():
                                     add_exc_example_btn = gr.Button("Add Example")
                                     add_exc_example_btn.click(
@@ -194,7 +129,7 @@ with gr.Blocks(css=css) as demo:
                                             "examples_to_exclude",
                                             "increment",
                                         ),
-                                        None,
+                                        [class_states],
                                         [
                                             class_states,
                                             current_class_idx,
@@ -209,7 +144,7 @@ with gr.Blocks(css=css) as demo:
                                             "examples_to_exclude",
                                             "decrement",
                                         ),
-                                        None,
+                                        [class_states],
                                         [
                                             class_states,
                                             current_class_idx,
@@ -222,7 +157,7 @@ with gr.Blocks(css=css) as demo:
                                     )
                                     curr_exc.submit(
                                         fn=partial(update_exclude_example, i, j),
-                                        inputs=[curr_exc],
+                                        inputs=[curr_exc, class_states],
                                     )
 
                 model_builder_button = gr.Button("Export JSON")
@@ -230,26 +165,15 @@ with gr.Blocks(css=css) as demo:
                     label="Model JSON", value=class_states.value
                 )
 
-                def update_model_json(class_s: list) -> list:
-                    return class_s
-
                 model_builder_button.click(
-                    update_model_json, class_states, model_json_textbox
+                    lambda x: x, class_states, model_json_textbox
                 )
 
         with gr.Column():
-
-            def placeholder_fn(
-                to_display: Union[Image.Image, np.ndarray], set_of_classes: list
-            ) -> dict:
-                deployed_id = deploy_classifier(set_of_classes)
-                classify_results = get_classifier_results(to_display, deployed_id)
-                return classify_results
-
             img_to_display = gr.Image()
             to_output = gr.Label()
             img_to_display.input(
-                placeholder_fn, [img_to_display, class_states], to_output
+                deploy_and_infer, [img_to_display, class_states], to_output
             )
 
 

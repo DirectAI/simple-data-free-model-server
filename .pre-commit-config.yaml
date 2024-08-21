@@ -7,6 +7,6 @@ repos:
     hooks:
       - id: mypy
         name: mypy in docker
-        entry: ./mypy.sh -b
+        entry: ./mypy.sh -b -t
         language: system
         pass_filenames: false

@@ -8,6 +8,7 @@ RUN pip install -r requirements.txt
 
 COPY interface.py .
 COPY modeling.py .
+COPY utils.py .
 
 EXPOSE 7860
 

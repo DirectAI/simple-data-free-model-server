@@ -11,9 +11,7 @@ endpoint = f"http://{FASTAPI_HOST}:8000/"
 def deploy_classifier(set_of_classes: list) -> str:
     body = {"classifier_configs": set_of_classes}
     response = requests.post(endpoint + "deploy_classifier", json=body)
-    print(response)
     response_json = response.json()
-    print(response_json)
     return response_json["deployed_id"]
 
 
