@@ -4,7 +4,7 @@ from PIL import Image
 import numpy as np
 from typing import Union
 
-FASTAPI_HOST = "local_fastapi_ben"
+FASTAPI_HOST = "local_fastapi"
 endpoint = f"http://{FASTAPI_HOST}:8000/"
 
 
