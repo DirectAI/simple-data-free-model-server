@@ -1,6 +1,7 @@
 from PIL import Image
 import cv2
 import random
+from logging_config import logger
 import numpy as np
 import io
 from copy import deepcopy
@@ -17,7 +18,7 @@ def validate_can_open_with_opencv(image: bytes) -> bool:
         _ = cv2.imdecode(np.frombuffer(image, np.uint8), -1)
         return True
     except Exception as e:
-        print(f"Error trying to open image with OpenCV: {str(e)}")
+        logger.error(f"Error trying to open image with OpenCV: {str(e)}")
         return False
 
 
@@ -27,7 +28,7 @@ def validate_can_open_with_pil(image: bytes) -> bool:
         _ = np.array(Image.open(io.BytesIO(image)))
         return True
     except Exception as e:
-        print(f"Error trying to open image with PIL: {str(e)}")
+        logger.error(f"Error trying to open image with PIL: {str(e)}")
         return False
 
 
@@ -39,4 +40,3 @@ def raise_if_cannot_open(image: bytes) -> None:
     if not validate_can_open_with_any(image):
         # NOTE: should we be more verbose? we could in theory return the specific error message
         raise HTTPException(status_code=422, detail="Invalid image received, unable to open.")
-    

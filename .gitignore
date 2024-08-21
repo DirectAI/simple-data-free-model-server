@@ -1,3 +1,4 @@
 redis_data/appendonlydir/
-logs/**
+redis_data/dump.rdb
+logs/
 .cache

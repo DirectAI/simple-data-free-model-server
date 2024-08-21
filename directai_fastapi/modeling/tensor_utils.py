@@ -72,7 +72,9 @@ def batch_encode_cache_missed_list_elements(
     return output_tensor
 
 
-def resize_pil_image(pil_image: Image.Image, image_size: tuple[int, int]) -> Image.Image:
+def resize_pil_image(
+    pil_image: Image.Image, image_size: tuple[int, int]
+) -> Image.Image:
     if pil_image.format == "JPEG":
         # try requesting a format-specific conversion
         # this significantly speeds up the subsequent resize operation
@@ -94,29 +96,29 @@ def image_bytes_to_tensor(image: bytes, image_size: tuple[int, int]) -> torch.Te
 
 
 def squish_labels(
-        labels: list[str],
-        inc_sub_labels_dict: dict[str, list[str]],
-        exc_sub_labels_dict: dict[str, list[str]],
-    ) -> tuple[list[str], dict[str, int]]:
-        # build one list of labels to encode, without duplicates
-        # and lists / dicts containing the indices of each label
-        # and the indices of each label's sub-labels
-        all_labels_to_inds: dict[str, int] = {}
-        all_labels = []
+    labels: list[str],
+    inc_sub_labels_dict: dict[str, list[str]],
+    exc_sub_labels_dict: dict[str, list[str]],
+) -> tuple[list[str], dict[str, int]]:
+    # build one list of labels to encode, without duplicates
+    # and lists / dicts containing the indices of each label
+    # and the indices of each label's sub-labels
+    all_labels_to_inds: dict[str, int] = {}
+    all_labels = []
 
-        for label in labels:
-            inc_subs = inc_sub_labels_dict.get(label)
-            if inc_subs is not None:
-                for inc_sub in inc_subs:
-                    if inc_sub not in all_labels_to_inds:
-                        all_labels_to_inds[inc_sub] = len(all_labels_to_inds)
-                        all_labels.append(inc_sub)
+    for label in labels:
+        inc_subs = inc_sub_labels_dict.get(label)
+        if inc_subs is not None:
+            for inc_sub in inc_subs:
+                if inc_sub not in all_labels_to_inds:
+                    all_labels_to_inds[inc_sub] = len(all_labels_to_inds)
+                    all_labels.append(inc_sub)
 
-            exc_subs = exc_sub_labels_dict.get(label)
-            if exc_subs is not None:
-                for exc_sub in exc_subs:
-                    if exc_sub not in all_labels_to_inds:
-                        all_labels_to_inds[exc_sub] = len(all_labels_to_inds)
-                        all_labels.append(exc_sub)
+        exc_subs = exc_sub_labels_dict.get(label)
+        if exc_subs is not None:
+            for exc_sub in exc_subs:
+                if exc_sub not in all_labels_to_inds:
+                    all_labels_to_inds[exc_sub] = len(all_labels_to_inds)
+                    all_labels.append(exc_sub)
 
-        return all_labels, all_labels_to_inds
+    return all_labels, all_labels_to_inds

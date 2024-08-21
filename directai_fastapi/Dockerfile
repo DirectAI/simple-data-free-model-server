@@ -9,6 +9,13 @@ RUN apt-get install git -y
 RUN apt-get install cmake build-essential -y
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+
+# replace pillow with pillow-simd for faster image processing using CPU SIMD and AVX2
+RUN apt-get install libjpeg-dev zlib1g-dev -y
+RUN pip uninstall -y pillow
+RUN CC="cc -mavx2" pip install -U --force-reinstall pillow-simd
+
+COPY logging_config.py .
 COPY pydantic_models.py .
 COPY server.py .
 COPY run.sh .
