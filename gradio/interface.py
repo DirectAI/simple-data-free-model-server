@@ -3,6 +3,10 @@ import json
 import gradio as gr  # type: ignore[import-untyped]
 from functools import partial
 
+import requests
+from PIL import Image
+from io import BytesIO
+
 
 from utils import (
     upload_file,
@@ -171,8 +175,19 @@ with gr.Blocks(css=css) as demo:
 
         with gr.Column():
             img_to_display = gr.Image()
+            with gr.Group():
+                optional_img_url = gr.Textbox(
+                    label="[Optional]: Upload an Image via URL"
+                )
+                img_url_submit_button = gr.Button("Submit")
+                img_url_submit_button.click(
+                    lambda img_url: Image.open(requests.get(img_url, stream=True).raw),
+                    [optional_img_url],
+                    [img_to_display],
+                )
+
             to_output = gr.Label()
-            img_to_display.input(
+            img_to_display.change(
                 deploy_and_infer, [img_to_display, class_states], to_output
             )
 
