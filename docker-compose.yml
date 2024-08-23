@@ -1,26 +1,26 @@
 version: '2.3'
 services:
-  local_redis_isaac_2:
+  local_redis:
     build: redis_data/
-    container_name: local_redis_isaac_2
+    container_name: local_redis
     ports:
-      - 63790:63790
+      - 6379:6379
     volumes:
       - ./redis_data/:/data
     networks:
       - deploy_network
-  local_fastapi_isaac_2:
+  local_fastapi:
     build: directai_fastapi/
     ports: 
-      - 10000:10000
+      - 8000:8000
     networks:
       - deploy_network
-    container_name: local_fastapi_isaac_2
+    container_name: local_fastapi
     environment:
       - PYTHONUNBUFFERED=1
       - NVIDIA_VISIBLE_DEVICES=1
       - HF_HOME=/directai_fastapi/.cache/huggingface
-      - CACHE_REDIS_PORT=63790
+      - CACHE_REDIS_PORT=6379
     env_file:
       - directai_fastapi/.env
     runtime: nvidia
@@ -29,7 +29,7 @@ services:
       - ./.cache:/directai_fastapi/.cache
     shm_size: 10.24g  # because Ray complains if it's less
     depends_on:
-      - local_redis_isaac_2
+      - local_redis
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

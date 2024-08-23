@@ -9,6 +9,7 @@ from torch.nn import functional as F
 from typing import List
 from pydantic_models import ClassifierResponse, SingleDetectionResponse
 from modeling.image_classifier import ZeroShotImageClassifierWithFeedback
+from modeling.object_detector import ZeroShotObjectDetectorWithFeedback
 
 
 serve.start(http_options={"port": 8100})
@@ -16,15 +17,48 @@ serve.start(http_options={"port": 8100})
 
 @serve.deployment
 class ObjectDetector:
-    async def __call__(self, image: Image.Image) -> List[List[SingleDetectionResponse]]:
-        # Placeholder implementation
-        single_detection = {
-            "tlbr": [0.0, 0.0, 1.0, 1.0],
-            "score": random.random(),
-            "class": "dog",
-        }
-        sdr = SingleDetectionResponse.parse_obj(single_detection)
-        return [[sdr]]
+    def __init__(self) -> None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = ZeroShotObjectDetectorWithFeedback(device=device)
+
+    async def __call__(
+        self,
+        image: bytes,
+        labels: list[str],
+        inc_sub_labels_dict: dict[str, list[str]],
+        exc_sub_labels_dict: dict[str, list[str]] | None = None,
+        label_conf_thres: dict[str, float] | None = None,
+        augment_examples: bool = True,
+        nms_thre: float = 0.4,
+        run_class_agnostic_nms: bool = False,
+    ) -> list[SingleDetectionResponse]:
+        with torch.inference_mode(), torch.autocast(str(self.model.device)):
+            batched_predicted_boxes = self.model(
+                image,
+                labels=labels,
+                inc_sub_labels_dict=inc_sub_labels_dict,
+                exc_sub_labels_dict=exc_sub_labels_dict,
+                label_conf_thres=label_conf_thres,
+                augment_examples=augment_examples,
+                nms_thre=nms_thre,
+                run_class_agnostic_nms=run_class_agnostic_nms,
+            )
+
+            # since we are not batching, we can assume the output has batch size 1
+            per_label_boxes = batched_predicted_boxes[0]
+
+            # predicted_boxes is a list in order of labels, with each box of the form [x1, y1, x2, y2, confidence]
+            detection_responses = []
+            for label, boxes in zip(labels, per_label_boxes):
+                for detection in boxes:
+                    single_detection_response = SingleDetectionResponse(
+                        tlbr=detection[:4].tolist(),
+                        score=detection[4].item(),
+                        class_=label,  # type: ignore
+                    )
+                    detection_responses.append(single_detection_response)
+
+            return detection_responses
 
 
 @serve.deployment
@@ -41,8 +75,7 @@ class ImageClassifier:
         exc_sub_labels_dict: dict[str, list[str]] | None = None,
         augment_examples: bool = True,
     ) -> ClassifierResponse:
-
-        with torch.no_grad(), torch.autocast(str(self.model.device)):
+        with torch.inference_mode(), torch.autocast(str(self.model.device)):
             raw_scores = self.model(
                 image,
                 labels=labels,
