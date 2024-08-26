@@ -10,6 +10,4 @@ COPY interface.py .
 COPY modeling.py .
 COPY utils.py .
 
-EXPOSE 7860
-
 CMD ["python", "interface.py"]
