@@ -1,4 +1,5 @@
 import json
+import requests
 from typing import Tuple, Union
 import numpy as np
 from PIL import Image
@@ -27,8 +28,9 @@ def update_include_example(
     include_idx: int,
     label_name: str,
     class_states_val: list,
-) -> None:
+) -> list:
     class_states_val[class_idx]["examples_to_include"][include_idx] = label_name
+    return class_states_val
 
 
 def update_exclude_example(
@@ -36,8 +38,9 @@ def update_exclude_example(
     exclude_idx: int,
     label_name: str,
     class_states_val: list,
-) -> None:
+) -> list:
     class_states_val[class_idx]["examples_to_exclude"][exclude_idx] = label_name
+    return class_states_val
 
 
 def change_example_count(
@@ -67,9 +70,24 @@ def change_example_count(
 
 def deploy_and_infer(
     to_display: Union[Image.Image, np.ndarray], set_of_classes: list
-) -> dict:
+) -> Tuple[dict, str]:
     if to_display is None:
-        return {}
-    deployed_id = deploy_classifier(set_of_classes)
-    classify_results = get_classifier_results(to_display, deployed_id)
-    return classify_results
+        return {}, ""
+    try:
+        deployed_id = deploy_classifier(set_of_classes)
+        classify_results = get_classifier_results(to_display, deployed_id)
+        return classify_results, ""
+    except json.decoder.JSONDecodeError as e:
+        return {}, "**JSON Decode Error** in Model Deploy or Classification Response"
+    except requests.exceptions.ConnectionError as ce:
+        return (
+            {},
+            "**Request Connection Error** in Model Deploy or Classification Response",
+        )
+    except ValueError as ve:
+        return {}, str(ve)
+    except Exception as e:
+        return (
+            {},
+            "**Generic Exception** in Model Deploy or Classification Response. Please try again.",
+        )

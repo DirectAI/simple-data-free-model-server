@@ -4,14 +4,19 @@ from PIL import Image
 import numpy as np
 from typing import Union
 
-FASTAPI_HOST = "local_fastapi"
-endpoint = f"http://{FASTAPI_HOST}:8000/"
+FASTAPI_HOST = "host.docker.internal"
+FASTAPI_PORT = 8001
+endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
 
 
 def deploy_classifier(set_of_classes: list) -> str:
     body = {"classifier_configs": set_of_classes}
     response = requests.post(endpoint + "deploy_classifier", json=body)
+    if response.status_code == 500:
+        raise ValueError(response.text)
     response_json = response.json()
+    if response.status_code != 200:
+        raise ValueError(response_json["message"])
     return response_json["deployed_id"]
 
 
@@ -36,5 +41,9 @@ def get_classifier_results(
     params = {"deployed_id": deployed_id}
 
     response = requests.post(endpoint + "classify", params=params, files=files)
+    if response.status_code == 500:
+        raise ValueError(response.text)
     response_json = response.json()
+    if response.status_code != 200:
+        raise ValueError(response_json["message"])
     return response_json["scores"]

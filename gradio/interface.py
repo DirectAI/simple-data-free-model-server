@@ -3,6 +3,8 @@ import json
 import gradio as gr  # type: ignore[import-untyped]
 from functools import partial
 
+from PIL import Image
+import numpy as np
 
 from utils import (
     upload_file,
@@ -12,6 +14,8 @@ from utils import (
     change_example_count,
     deploy_and_infer,
 )
+
+from typing import Union
 
 css = """
 #configuration_accordion {background-color: #0B0F19}
@@ -54,16 +58,17 @@ with gr.Blocks(css=css) as demo:
             def render_count(
                 class_states_val: list, class_idx: int, is_accordion_open: bool
             ) -> None:
+                print("rendering count!", class_states_val)
                 count_val = len(class_states_val)
 
                 for i in range(count_val):
                     class_label = class_states_val[i]["name"]
                     to_include_list = class_states_val[i]["examples_to_include"]
                     to_exclude_list = class_states_val[i]["examples_to_exclude"]
+                    print(class_label, to_include_list, to_exclude_list)
 
                     with gr.Group(class_label, elem_id=f"tab_{i}"):
                         box = gr.Textbox(
-                            key=i,
                             label="class label",
                             value=class_label,
                             autofocus=True,
@@ -111,12 +116,11 @@ with gr.Blocks(css=css) as demo:
                                         ],
                                     )
                                 for j, inc_example in enumerate(to_include_list):
-                                    curr_inc = gr.Textbox(
-                                        key=f"inc_{i}_{j}", label="", value=inc_example
-                                    )
+                                    curr_inc = gr.Textbox(label="", value=inc_example)
                                     curr_inc.submit(
                                         fn=partial(update_include_example, i, j),
                                         inputs=[curr_inc, class_states],
+                                        outputs=[class_states],
                                     )
 
                             with gr.Accordion("examples to exclude", open=True):
@@ -152,12 +156,11 @@ with gr.Blocks(css=css) as demo:
                                         ],
                                     )
                                 for j, exc_example in enumerate(to_exclude_list):
-                                    curr_exc = gr.Textbox(
-                                        key=f"exc_{i}_{j}", label="", value=exc_example
-                                    )
+                                    curr_exc = gr.Textbox(label="", value=exc_example)
                                     curr_exc.submit(
                                         fn=partial(update_exclude_example, i, j),
                                         inputs=[curr_exc, class_states],
+                                        outputs=[class_states],
                                     )
 
                 model_builder_button = gr.Button("Export JSON")
@@ -171,10 +174,23 @@ with gr.Blocks(css=css) as demo:
 
         with gr.Column():
             img_to_display = gr.Image()
-            to_output = gr.Label()
-            img_to_display.input(
-                deploy_and_infer, [img_to_display, class_states], to_output
+
+            @gr.render(
+                inputs=[class_states, img_to_display],
+                triggers=[class_states.change, img_to_display.input],
             )
+            def render_results(
+                class_states_val: list, img_to_display: Union[Image.Image, np.ndarray]
+            ) -> None:
+                print("render_results!")
+                print(class_states_val, type(img_to_display))
+                if img_to_display is not None:
+                    print("image isn't none!")
+                    inference_results, error_text = deploy_and_infer(
+                        img_to_display, class_states_val
+                    )
+                    _ = gr.Label(inference_results)
+                    _ = gr.Markdown(error_text)
 
 
 demo.launch(server_name="0.0.0.0")

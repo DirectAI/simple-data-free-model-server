@@ -36,7 +36,7 @@ def grab_redis_endpoint(
     if password is None:
         password = os.environ.get("CACHE_REDIS_PASSWORD", "default_password")
     if port is None:
-        port = os.environ.get("CACHE_REDIS_PORT", 6379)
+        port = os.environ.get("CACHE_REDIS_PORT", 6371)
     return f"redis://{username}:{password}@{host}:{port}"
 
 
@@ -56,6 +56,7 @@ async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]
 @app.on_event("startup")
 async def startup_event() -> None:
     app.state.detector_handle, app.state.classifier_handle = deploy_backend_models()
+    print(f"{grab_redis_endpoint()}?decode_responses=True")
     app.state.config_cache = await redis.from_url(
         f"{grab_redis_endpoint()}?decode_responses=True"
     )

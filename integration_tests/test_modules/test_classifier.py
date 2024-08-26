@@ -29,7 +29,7 @@ def compute_kl_divergence_based_classification_loss(
 class TestClassifyDeploy(unittest.TestCase):
     def __init__(self, methodName: str = "runTest"):
         super().__init__(methodName=methodName)
-        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
+        self.endpoint = f"http://{FASTAPI_HOST}:8001/"
 
     def test_deploy_classifier_config_missing(self) -> None:
         body: dict = {}
@@ -55,6 +55,17 @@ class TestClassifyDeploy(unittest.TestCase):
         expected_result = {
             "status_code": 422,
             "message": "1 validation error for Request body -> classifier_configs -> 0 -> examples_to_include field required (type=value_error.missing)",
+            "data": None,
+        }
+        response = requests.post(self.endpoint + "deploy_classifier", json=body)
+        response_json = response.json()
+        self.assertEqual(response_json, expected_result)
+
+    def test_deploy_classifier_failure_no_classes(self) -> None:
+        body: Dict[str, Any] = {"classifier_configs": []}
+        expected_result = {
+            "status_code": 422,
+            "message": "Class list is empty.",
             "data": None,
         }
         response = requests.post(self.endpoint + "deploy_classifier", json=body)
@@ -110,7 +121,7 @@ class TestClassifyDeploy(unittest.TestCase):
 class TestClassifyInference(unittest.TestCase):
     def __init__(self, methodName: str = "runTest"):
         super().__init__(methodName=methodName)
-        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
+        self.endpoint = f"http://{FASTAPI_HOST}:8001/"
         # here we assume that deploy has been tested and works
         # so we can generate a fixed deploy id for testing
         body = {
