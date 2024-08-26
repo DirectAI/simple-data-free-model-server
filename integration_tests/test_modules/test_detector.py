@@ -3,8 +3,8 @@ import unittest
 import requests
 import numpy as np
 from pydantic import BaseModel, Field, conlist
-from typing import Dict, List, Union
-from scipy.optimize import linear_sum_assignment  # type: ignore
+from typing import Dict, List, Union, Any
+from scipy.optimize import linear_sum_assignment  # type: ignore[import-untyped]
 
 FASTAPI_HOST = "host.docker.internal"
 
@@ -15,6 +15,9 @@ class SingleDetectionResponse(BaseModel):
     tlbr: conlist(float, min_items=4, max_items=4)  # type: ignore[valid-type]
     score: float
     class_: str = Field(alias="class")
+
+    class Config:
+        allow_population_by_field_name = True
 
 
 def bbox_iou(box1: List[float], box2: List[float]) -> float:
@@ -289,12 +292,12 @@ class TestDetectorInference(unittest.TestCase):
 
         self.assertEqual(len(detect_response_json), 1)
         expected_detect_response = [
-            SingleDetectionResponse(**d)
+            SingleDetectionResponse.parse_obj(d)
             for d in expected_detect_response_unaccelerated[0]
-        ]  # type: ignore
+        ]
         actual_detect_response = [
-            SingleDetectionResponse(**d) for d in detect_response_json[0]
-        ]  # type: ignore
+            SingleDetectionResponse.parse_obj(d) for d in detect_response_json[0]
+        ]
         self.assertLess(
             compute_naive_bipartite_detection_loss(
                 expected_detect_response, actual_detect_response
@@ -372,7 +375,7 @@ class TestDetectorInference(unittest.TestCase):
                     "tlbr": [167.0, 151.0, 267.0, 494.0],
                     "score": 0.473,
                     "class": "bottle",
-                },  # type: ignore
+                },
                 {
                     "tlbr": [407.0, 152.0, 510.0, 495.0],
                     "score": 0.466,
@@ -424,11 +427,11 @@ class TestDetectorInference(unittest.TestCase):
 
         self.assertEqual(len(detect_response_json), 1)
         expected_detect_response = [
-            SingleDetectionResponse(**d)  # type: ignore
+            SingleDetectionResponse.parse_obj(d)
             for d in expected_detect_response_unaccelerated[0]
         ]
         actual_detect_response = [
-            SingleDetectionResponse(**d) for d in detect_response_json[0]  # type: ignore
+            SingleDetectionResponse(**d) for d in detect_response_json[0]
         ]
         self.assertLess(
             compute_naive_bipartite_detection_loss(
@@ -482,11 +485,11 @@ class TestDetectorInference(unittest.TestCase):
 
         self.assertEqual(len(detect_response_json), 1)
         expected_detect_response = [
-            SingleDetectionResponse(**d)  # type: ignore
+            SingleDetectionResponse.parse_obj(d)
             for d in expected_detect_response_unaccelerated[0]
         ]
         actual_detect_response = [
-            SingleDetectionResponse(**d) for d in detect_response_json[0]  # type: ignore
+            SingleDetectionResponse(**d) for d in detect_response_json[0]
         ]
         self.assertLess(
             compute_naive_bipartite_detection_loss(
@@ -624,7 +627,7 @@ class TestDetectorInference(unittest.TestCase):
 
         self.assertEqual(len(detect_response_json), 1)
         expected_detect_response = [
-            SingleDetectionResponse(**d)
+            SingleDetectionResponse.parse_obj(d)
             for d in expected_detect_response_accelerated[0]
         ]
         actual_detect_response = [
