@@ -215,8 +215,8 @@ class ZeroShotObjectDetectorWithFeedback(nn.Module):
         self,
         model_name: str = "google/owlv2-large-patch14-ensemble",
         image_size: tuple[int, int] = (1008, 1008),
-        max_text_batch_size: int = 256,
-        max_image_batch_size: int = 256,
+        max_text_batch_size: int = 32,
+        max_image_batch_size: int = 32,
         device: torch.device | str = "cuda",
         lru_cache_size: int = 4096,
         jit: bool = True,
@@ -370,9 +370,6 @@ class ZeroShotObjectDetectorWithFeedback(nn.Module):
 
         if any([len(sub_labels) == 0 for sub_labels in inc_sub_labels_dict.values()]):
             raise ValueError("Each label must include at least one sub-label")
-
-        if image_tensor.shape[0] > 1:
-            raise ValueError("Batched image inputs are not yet supported")
 
         image_tensor = image_tensor.to(self.device)
 
@@ -675,7 +672,7 @@ def run_nms_based_box_suppression_for_one_object(
         pro_max, con_max, adjacency_list, conf_thre, run_nms
     )
 
-    boxes = pred_boxes.squeeze(0)[survive_inds]
+    boxes = pred_boxes[survive_inds]
     logits = pro_max[survive_inds]
 
     logits = logits.unsqueeze(-1)
@@ -690,9 +687,9 @@ def run_nms_based_box_suppression_for_one_object(
     boxes = torch.stack([tl_x, tl_y, br_x, br_y], dim=-1)
 
     boxes_with_scores = torch.cat([boxes, logits], dim=-1)
-    boxes_with_scores = boxes_with_scores[
-        boxes_with_scores[:, 4].argsort(descending=True)
-    ]
+    ordered_by_logit = boxes_with_scores[:, 4].argsort(descending=True)
+    boxes_with_scores = boxes_with_scores[ordered_by_logit]
+    survive_inds = survive_inds[ordered_by_logit]
 
     return boxes_with_scores, survive_inds
 

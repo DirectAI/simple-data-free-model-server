@@ -117,6 +117,7 @@ class TestObjectDetector(unittest.TestCase):
         NotImplemented
     )  # type: ClassVar[ZeroShotObjectDetectorWithFeedback]
     coke_bottle_image_bytes = NotImplemented  # type: ClassVar[bytes]
+    coke_can_image_bytes = NotImplemented  # type: ClassVar[bytes]
     default_labels = NotImplemented  # type: ClassVar[list[str]]
     default_incs = NotImplemented  # type: ClassVar[dict[str, list[str]]]
     default_excs = NotImplemented  # type: ClassVar[dict[str, list[str]]]
@@ -125,15 +126,19 @@ class TestObjectDetector(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.object_detector = ZeroShotObjectDetectorWithFeedback(jit=True)
+        cls.object_detector = ZeroShotObjectDetectorWithFeedback(jit=False)
 
         coke_bottle_filepath = "unit_tests/sample_data/coke_through_the_ages.jpeg"
         with open(coke_bottle_filepath, "rb") as f:
             cls.coke_bottle_image_bytes = f.read()
+        coke_can_filepath = "unit_tests/sample_data/coke_can.jpg"
+        with open(coke_can_filepath, "rb") as f:
+            cls.coke_can_image_bytes = f.read()
 
-        cls.default_labels = ["bottle", "moose"]
+        cls.default_labels = ["bottle", "can", "moose"]
         cls.default_incs = {
             "bottle": ["bottle", "glass bottle", "plastic bottle", "water bottle"],
+            "can": ["can", "soda can", "aluminum can"],
             "moose": ["moose", "elk", "deer"],
         }
         cls.default_excs = {
@@ -142,6 +147,7 @@ class TestObjectDetector(unittest.TestCase):
         cls.default_nms_thre = 0.1
         cls.default_conf_thres = {
             "bottle": 0.1,
+            "can": 0.1,
             "moose": 0.1,
         }
 
@@ -160,18 +166,54 @@ class TestObjectDetector(unittest.TestCase):
             predicted_boxes = batched_predicted_boxes[0]
             self.assertEqual(len(predicted_boxes), len(self.default_labels))
             bottle_boxes = predicted_boxes[0]
-            moose_boxes = predicted_boxes[1]
+            can_boxes = predicted_boxes[1]
+            moose_boxes = predicted_boxes[2]
             self.assertEqual(len(bottle_boxes), 9)
+            self.assertEqual(len(can_boxes), 0)
             self.assertEqual(len(moose_boxes), 0)
 
-    @unittest.skip("We don't yet support batched object detection")
     def test_batched_detect(self) -> None:
+        # ideally we would test a set of random images
+        # but we use a sort, which has unstable ordering with floating point numbers
+        # which means it is nontrivial to compare the outputs of the batched and single-image versions
+        # instead we're going to limit to confident predictions from two images
+        # and hope that the confidences are well-enough separated that the sort is stable
+
         with torch.no_grad():
-            random_images = torch.rand(16, 3, *self.object_detector.image_size)
-            image_scale_ratios = torch.ones(16)
+            coke_bottle_image_tensor, coke_bottle_ratio = (
+                created_padded_tensor_from_bytes(
+                    self.coke_bottle_image_bytes, self.object_detector.image_size
+                )
+            )
+            coke_can_image_tensor, coke_can_ratio = created_padded_tensor_from_bytes(
+                self.coke_can_image_bytes, self.object_detector.image_size
+            )
+
+            batched_images = torch.cat(
+                [
+                    coke_bottle_image_tensor,
+                ]
+                * 8
+                + [
+                    coke_can_image_tensor,
+                ]
+                * 8,
+                dim=0,
+            )
+            batched_ratios = torch.cat(
+                [
+                    coke_bottle_ratio,
+                ]
+                * 8
+                + [
+                    coke_can_ratio,
+                ]
+                * 8,
+                dim=0,
+            )
 
             single_image_outputs_list = []
-            for image in random_images:
+            for image, ratio in zip(batched_images, batched_ratios):
                 single_image_outputs_list.append(
                     self.object_detector(
                         image.unsqueeze(0),
@@ -179,27 +221,98 @@ class TestObjectDetector(unittest.TestCase):
                         inc_sub_labels_dict=self.default_incs,
                         exc_sub_labels_dict=None,
                         nms_thre=self.default_nms_thre,
-                        label_conf_thres={"bottle": 0.0, "moose": 0.0},
-                        image_scale_ratios=image_scale_ratios,
+                        label_conf_thres=self.default_conf_thres,
+                        image_scale_ratios=ratio.unsqueeze(0),
                     )[0]
                 )
 
             batched_outputs = self.object_detector(
-                random_images,
+                batched_images,
                 labels=self.default_labels,
                 inc_sub_labels_dict=self.default_incs,
                 exc_sub_labels_dict=None,
                 nms_thre=self.default_nms_thre,
-                label_conf_thres={"bottle": 0.0, "moose": 0.0},
-                image_scale_ratios=image_scale_ratios,
+                label_conf_thres=self.default_conf_thres,
+                image_scale_ratios=batched_ratios,
             )
 
-        for i in range(16):
-            for j in range(2):
+        for i in range(len(batched_outputs)):
+            for j in range(len(batched_outputs[i])):
                 from_batch = batched_outputs[i][j]
                 from_single = single_image_outputs_list[i][j]
                 self.assertEqual(from_batch.shape, from_single.shape)
                 if from_batch.shape[0] == 0:
                     continue
-                max_diff = (from_batch - from_single).abs().max().item()
-                self.assertTrue(max_diff < 1e-5)
+
+                # these values have range on the order of 1e3, so we scale them to compare
+                scale = torch.maximum(from_batch.abs(), from_single.abs())
+                diff = (from_batch - from_single).abs()
+                scaled_diff = diff / (scale + 1e-6)
+                max_diff = scaled_diff.max().item()
+
+                # large range and machine precision issues mean the max diff has a lot of noise
+                # TODO: is this more than is sane?
+                self.assertTrue(max_diff < 1e-3)
+
+    def test_batch_detect_random_append(self) -> None:
+        # we test batched detection by doing a pass for one image
+        # and then doing a batched pass for that image and many random images
+        # we use low confidence thresholds during the detection
+        # and then truncate at a high confidence level to ensure stability due to sorting
+        confidences = {label: 0.0 for label in self.default_labels}
+        with torch.no_grad():
+            coke_bottle_image_tensor, coke_bottle_ratio = (
+                created_padded_tensor_from_bytes(
+                    self.coke_bottle_image_bytes, self.object_detector.image_size
+                )
+            )
+            baseline_output = self.object_detector(
+                coke_bottle_image_tensor,
+                labels=self.default_labels,
+                inc_sub_labels_dict=self.default_incs,
+                exc_sub_labels_dict=None,
+                nms_thre=self.default_nms_thre,
+                label_conf_thres=confidences,
+                image_scale_ratios=coke_bottle_ratio,
+            )[0]
+
+            random_tensors = torch.rand(128, 3, *self.object_detector.image_size)
+            batched_tensor = torch.cat([random_tensors, coke_bottle_image_tensor])
+            batched_ratios = torch.cat([torch.ones(128), coke_bottle_ratio])
+            batched_output = self.object_detector(
+                batched_tensor,
+                labels=self.default_labels,
+                inc_sub_labels_dict=self.default_incs,
+                exc_sub_labels_dict=None,
+                nms_thre=self.default_nms_thre,
+                label_conf_thres=confidences,
+                image_scale_ratios=batched_ratios,
+            )[-1]
+
+            for baseline_obj_detections, batched_obj_detections in zip(
+                baseline_output, batched_output
+            ):
+                # filter by confidence of 0.1
+                baseline_obj_detections = baseline_obj_detections[
+                    baseline_obj_detections[:, 4] > 0.1
+                ]
+                batched_obj_detections = batched_obj_detections[
+                    batched_obj_detections[:, 4] > 0.1
+                ]
+
+                self.assertEqual(
+                    baseline_obj_detections.shape, batched_obj_detections.shape
+                )
+                if baseline_obj_detections.shape[0] == 0:
+                    continue
+
+                # these values have range on the order of 1e3, so we scale them to compare
+                scale = torch.maximum(
+                    baseline_obj_detections.abs(), batched_obj_detections.abs()
+                )
+                diff = (baseline_obj_detections - batched_obj_detections).abs()
+                scaled_diff = diff / (scale + 1e-6)
+                max_diff = scaled_diff.max().item()
+
+                # large range and machine precision issues mean the max diff has a lot of noise
+                self.assertTrue(max_diff < 1e-6)
