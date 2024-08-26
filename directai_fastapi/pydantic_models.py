@@ -37,6 +37,11 @@ class ClassifierDeploy(BaseModel):
 
     async def save_configuration(self, config_cache: redis.Redis) -> dict:
         logger.info(f"Classifier Configs: {self.classifier_configs}")
+        if len(self.classifier_configs) == 0:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Class list is empty.",
+            )
         for classifier_config in self.classifier_configs:
             logger.info(classifier_config.examples_to_include)
             if len(classifier_config.examples_to_include) == 0:

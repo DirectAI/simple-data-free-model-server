@@ -61,6 +61,17 @@ class TestClassifyDeploy(unittest.TestCase):
         response_json = response.json()
         self.assertEqual(response_json, expected_result)
 
+    def test_deploy_classifier_failure_no_classes(self) -> None:
+        body: Dict[str, Any] = {"classifier_configs": []}
+        expected_result = {
+            "status_code": 422,
+            "message": "Class list is empty.",
+            "data": None,
+        }
+        response = requests.post(self.endpoint + "deploy_classifier", json=body)
+        response_json = response.json()
+        self.assertEqual(response_json, expected_result)
+
     def test_deploy_classifier_success(self) -> None:
         body = {
             "classifier_configs": [
