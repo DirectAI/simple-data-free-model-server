@@ -1,8 +1,10 @@
-FROM pytorch/pytorch:2.2.0-cuda12.1-cudnn8-runtime
+FROM pytorch/pytorch:2.2.0-cuda12.1-cudnn8-devel
 WORKDIR /directai_fastapi
 
 RUN apt-get update
 RUN apt-get install libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 -y
+
+RUN apt-get install git -y
 
 RUN apt-get install cmake build-essential -y
 COPY requirements.txt .

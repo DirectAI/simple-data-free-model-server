@@ -19,12 +19,14 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - NVIDIA_VISIBLE_DEVICES=all
-      - HF_HOME=/.cache/huggingface
+      - HF_HOME=/directai_fastapi/.cache/huggingface
+      - CACHE_REDIS_PORT=6379
     env_file:
       - directai_fastapi/.env
     runtime: nvidia
     volumes:
       - ./logs:/directai_fastapi/logs
+      - ./.cache:/directai_fastapi/.cache
     shm_size: 10.24g  # because Ray complains if it's less
     depends_on:
       - local_redis
