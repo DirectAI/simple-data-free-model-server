@@ -44,17 +44,20 @@ class ObjectDetector:
                 run_class_agnostic_nms=run_class_agnostic_nms,
             )
 
-            # since we are not batching, we can assume the output has batch size 1
+            # since we are processing a single image, the output has batch size 1, so we can safely index into it
             per_label_boxes = batched_predicted_boxes[0]
 
             # predicted_boxes is a list in order of labels, with each box of the form [x1, y1, x2, y2, confidence]
             detection_responses = []
             for label, boxes in zip(labels, per_label_boxes):
                 for detection in boxes:
-                    single_detection_response = SingleDetectionResponse(
-                        tlbr=detection[:4].tolist(),
-                        score=detection[4].item(),
-                        class_=label,  # type: ignore
+                    det_dict = {
+                        "tlbr": detection[:4].tolist(),
+                        "score": detection[4].item(),
+                        "class_": label,
+                    }
+                    single_detection_response = SingleDetectionResponse.parse_obj(
+                        det_dict
                     )
                     detection_responses.append(single_detection_response)
 

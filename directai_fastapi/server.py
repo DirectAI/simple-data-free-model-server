@@ -58,7 +58,7 @@ async def startup_event() -> None:
     app.state.config_cache = await redis.from_url(
         f"{grab_redis_endpoint()}?decode_responses=True"
     )
-    print(f"Ping successful: {await app.state.config_cache.ping()}")
+    logger.info(f"Ping successful: {await app.state.config_cache.ping()}")
 
 
 @app.on_event("shutdown")
@@ -71,7 +71,7 @@ async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     exc_str = f"{exc}".replace("\n", " ").replace("   ", " ")
-    print(f"{request}: {exc_str}")
+    logger.info(f"{request}: {exc_str}")
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
@@ -85,7 +85,7 @@ async def validation_exception_handler(
 @app.exception_handler(HTTPException)
 async def exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     exc_str = f"{exc.detail}".replace("\n", " ").replace("   ", " ")
-    print(f"{request}: {exc_str}")
+    logger.info(f"{request}: {exc_str}")
     return JSONResponse(
         status_code=exc.status_code,
         content={"status_code": exc.status_code, "message": exc_str, "data": None},
@@ -110,7 +110,7 @@ async def deploy_classifier(request: Request, config: ClassifierDeploy) -> dict:
     deploy_response = await config.save_configuration(
         config_cache=app.state.config_cache
     )
-    print(f"Deployed classifier w/ ID: {deploy_response['deployed_id']}")
+    logger.info(f"Deployed classifier w/ ID: {deploy_response['deployed_id']}")
     return deploy_response
 
 
@@ -167,7 +167,7 @@ async def deploy_detector(request: Request, config: DetectorDeploy) -> dict:
     deploy_response = await config.save_configuration(
         config_cache=app.state.config_cache
     )
-    print(f"Deployed detector w/ ID: {deploy_response['deployed_id']}")
+    logger.info(f"Deployed detector w/ ID: {deploy_response['deployed_id']}")
     return deploy_response
 
 
@@ -187,7 +187,6 @@ async def run_detector(
     data: UploadFile = File(),
 ) -> List[List[SingleDetectionResponse]]:
     """Get detections from deployed model"""
-    print(f"Got request for {deployed_id}, which is a detector model")
     image = data.file.read()
     raise_if_cannot_open(image)
     logger.info(f"Got request for {deployed_id}, which is a detector model")

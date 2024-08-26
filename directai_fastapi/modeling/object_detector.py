@@ -3,14 +3,14 @@ import torch
 from PIL import Image
 import torch
 from torch import nn
-import torchvision  # type: ignore
+import torchvision  # type: ignore[import-untyped]
 import numpy as np
-from transformers import Owlv2Processor, Owlv2ForObjectDetection, Owlv2VisionModel  # type: ignore
-from transformers.models.owlv2.modeling_owlv2 import Owlv2Attention  # type: ignore
+from transformers import Owlv2Processor, Owlv2ForObjectDetection, Owlv2VisionModel  # type: ignore[import-untyped]
+from transformers.models.owlv2.modeling_owlv2 import Owlv2Attention  # type: ignore[import-untyped]
 import time
 from typing import Union
-from torch_scatter import scatter_max  # type: ignore
-from flash_attn import flash_attn_func  # type: ignore
+from torch_scatter import scatter_max  # type: ignore[import-untyped]
+from flash_attn import flash_attn_func  # type: ignore[import-untyped]
 import io
 from lru import LRU
 from functools import partial
