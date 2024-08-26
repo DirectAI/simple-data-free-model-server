@@ -55,7 +55,6 @@ async def grab_config(deployed_id: str) -> Dict[str, Union[str, Collection[str]]
 @app.on_event("startup")
 async def startup_event() -> None:
     app.state.detector_handle, app.state.classifier_handle = deploy_backend_models()
-    print(f"{grab_redis_endpoint()}?decode_responses=True")
     app.state.config_cache = await redis.from_url(
         f"{grab_redis_endpoint()}?decode_responses=True"
     )
