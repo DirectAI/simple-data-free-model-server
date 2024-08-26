@@ -8,6 +8,7 @@ from functools import partial
 from modeling.tensor_utils import (
     batch_encode_cache_missed_list_elements,
     image_bytes_to_tensor,
+    squish_labels,
 )
 from modeling.prompt_templates import noop_hypothesis_formats, many_hypothesis_formats
 from lru import LRU
@@ -134,35 +135,6 @@ class ZeroShotImageClassifierWithFeedback(nn.Module):
                 self.not_augmented_label_encoding_cache,
             )
 
-    def squish_labels(
-        self,
-        labels: list[str],
-        inc_sub_labels_dict: dict[str, list[str]],
-        exc_sub_labels_dict: dict[str, list[str]],
-    ) -> tuple[list[str], dict[str, int]]:
-        # build one list of labels to encode, without duplicates
-        # and lists / dicts containing the indices of each label
-        # and the indices of each label's sub-labels
-        all_labels_to_inds: dict[str, int] = {}
-        all_labels = []
-
-        for label in labels:
-            inc_subs = inc_sub_labels_dict.get(label)
-            if inc_subs is not None:
-                for inc_sub in inc_subs:
-                    if inc_sub not in all_labels_to_inds:
-                        all_labels_to_inds[inc_sub] = len(all_labels_to_inds)
-                        all_labels.append(inc_sub)
-
-            exc_subs = exc_sub_labels_dict.get(label)
-            if exc_subs is not None:
-                for exc_sub in exc_subs:
-                    if exc_sub not in all_labels_to_inds:
-                        all_labels_to_inds[exc_sub] = len(all_labels_to_inds)
-                        all_labels.append(exc_sub)
-
-        return all_labels, all_labels_to_inds
-
     def forward(
         self,
         image: torch.Tensor | bytes,
@@ -189,7 +161,7 @@ class ZeroShotImageClassifierWithFeedback(nn.Module):
             label: excs for label, excs in exc_sub_labels_dict.items() if len(excs) > 0
         }
 
-        all_labels, all_labels_to_inds = self.squish_labels(
+        all_labels, all_labels_to_inds = squish_labels(
             labels, inc_sub_labels_dict, exc_sub_labels_dict
         )
         text_features = self.encode_text(all_labels, augment=augment_examples)

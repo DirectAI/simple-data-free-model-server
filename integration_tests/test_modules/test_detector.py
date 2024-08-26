@@ -208,9 +208,28 @@ class TestDetect(unittest.TestCase):
         self.assertTrue("deployed_id" in response_json)
         self.assertEqual(response_json["message"], "New model deployed.")
 
-    @unittest.skip("detector isn't built yet")
+
+class TestDetectorInference(unittest.TestCase):
+    def __init__(self, methodName: str = "runTest"):
+        super().__init__(methodName=methodName)
+        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
+        # here we assume that deploy has been tested and works
+        # so we can generate a fixed deploy id for testing
+        body = {
+            "detector_configs": [
+                {
+                    "name": "bottle",
+                    "examples_to_include": ["bottle"],
+                    "examples_to_exclude": [],
+                    "detection_threshold": 0.1,
+                }
+            ],
+        }
+        deploy_response = requests.post(self.endpoint + "deploy_detector", json=body)
+        deploy_response_json = deploy_response.json()
+        self.sample_deployed_id = deploy_response_json["deployed_id"]
+
     def test_detect(self) -> None:
-        sample_deployed_id = "a554fdf3-cd07-45f5-a01a-c3b7cef75374"
         sample_fp = "sample_data/coke_through_the_ages.jpeg"
         expected_detect_response_unaccelerated = [
             [
@@ -267,7 +286,7 @@ class TestDetect(unittest.TestCase):
         files = {
             "data": (sample_fp, file_data, "image/jpg"),
         }
-        params = {"deployed_id": sample_deployed_id}
+        params = {"deployed_id": self.sample_deployed_id}
         response = requests.post(self.endpoint + "detect", params=params, files=files)
         detect_response_json = response.json()
 
@@ -287,13 +306,12 @@ class TestDetect(unittest.TestCase):
         )
 
     def test_detect_malformatted_image(self) -> None:
-        sample_deployed_id = "a554fdf3-cd07-45f5-a01a-c3b7cef75374"
         sample_fp = "bad_file_path.suffix"
         file_data = b"This is not an image file"
         files = {
             "data": (sample_fp, file_data, "image/jpg"),
         }
-        params = {"deployed_id": sample_deployed_id}
+        params = {"deployed_id": self.sample_deployed_id}
         response = requests.post(self.endpoint + "detect", params=params, files=files)
         response_json = response.json()
         self.assertEqual(response_json["status_code"], 422)
@@ -302,12 +320,11 @@ class TestDetect(unittest.TestCase):
         )
 
     def test_detect_empty_image(self) -> None:
-        sample_deployed_id = "a554fdf3-cd07-45f5-a01a-c3b7cef75374"
         sample_fp = "bad_file_path.jpg"
         files = {
             "data": (sample_fp, b"", "image/jpg"),
         }
-        params = {"deployed_id": sample_deployed_id}
+        params = {"deployed_id": self.sample_deployed_id}
         response = requests.post(self.endpoint + "detect", params=params, files=files)
         response_json = response.json()
         self.assertEqual(response_json["status_code"], 422)
@@ -316,7 +333,6 @@ class TestDetect(unittest.TestCase):
         )
 
     def test_detect_truncated_image(self) -> None:
-        sample_deployed_id = "a554fdf3-cd07-45f5-a01a-c3b7cef75374"
         sample_fp = "sample_data/coke_through_the_ages.jpeg"
         with open(sample_fp, "rb") as f:
             file_data = f.read()
@@ -324,7 +340,7 @@ class TestDetect(unittest.TestCase):
         files = {
             "data": (sample_fp, file_data, "image/jpg"),
         }
-        params = {"deployed_id": sample_deployed_id}
+        params = {"deployed_id": self.sample_deployed_id}
         response = requests.post(self.endpoint + "detect", params=params, files=files)
         response_json = response.json()
         self.assertEqual(response_json["status_code"], 422)
@@ -332,7 +348,6 @@ class TestDetect(unittest.TestCase):
             response_json["message"], "Invalid image received, unable to open."
         )
 
-    @unittest.skip("detector isn't built yet")
     def test_deploy_and_detect(self) -> None:
         # Starting Deploy Call
         body = {
@@ -425,9 +440,9 @@ class TestDetect(unittest.TestCase):
             0.05,
         )
 
-    @unittest.skip("detector isn't built yet")
     def test_deploy_with_long_prompt_and_detect(self) -> None:
         # Starting Deploy Call
+        # NOTE: this is the only single-class detection test that runs the class-specific NMS algorithm
         very_long_prompt = "boat from birds-eye view maritime vessel from birds-eye view boat from top-down view maritime vessel from top-down view"
         body = {
             "detector_configs": [
@@ -483,7 +498,6 @@ class TestDetect(unittest.TestCase):
             0.05,
         )
 
-    @unittest.skip("detector isn't built yet")
     def test_deploy_and_detect_without_augmented_examples(self) -> None:
         # Starting Deploy Call
         body = {
@@ -658,7 +672,6 @@ class TestDetect(unittest.TestCase):
             detect_response_json, detect_response_augmented_examples_json
         )
 
-    @unittest.skip("detector isn't built yet")
     def test_deploy_with_and_without_class_agnostic_nms(self) -> None:
         # Starting Deploy Call
         body = {

@@ -108,28 +108,33 @@ class DetectorDeploy(BaseModel):
         orm_mode = True
 
     async def save_configuration(self, config_cache: redis.Redis) -> dict:
+        logger.info(f"Detector Configs: {self.detector_configs}")
         for detector_config in self.detector_configs:
+            logger.info(detector_config.examples_to_include)
             if len(detector_config.examples_to_include) == 0:
                 raise HTTPException(
                     status_code=422,
                     detail=f"Model lacks example_to_include for {detector_config.name} class.",
                 )
-        # Translating into Backend
-        config_dict = self.dict()
-        for i, single_config in enumerate(config_dict["detector_configs"]):
-            single_config["incs"] = single_config["examples_to_include"]
-            single_config["excs"] = single_config["examples_to_exclude"]
-            single_config["img_incs"] = []
-            single_config["img_excs"] = []
-            single_config["thresh"] = single_config["detection_threshold"]
-            del single_config["examples_to_include"]
-            del single_config["examples_to_exclude"]
-            del single_config["detection_threshold"]
-            config_dict["detector_configs"][i] = single_config
-        config_dict["nms_thresh"] = config_dict["nms_threshold"]
-        del config_dict["nms_threshold"]
-        config_dict["augment_examples"] = config_dict.get("augment_examples", True)
-        config_dict["class_agnostic_nms"] = config_dict.get("class_agnostic_nms", True)
+        labels = [c.name for c in self.detector_configs]
+        inc_sub_labels_dict: dict[str, List[str]] = {
+            c.name: c.examples_to_include for c in self.detector_configs
+        }
+        exc_sub_labels_dict: dict[str, List[str]] = {
+            c.name: c.examples_to_exclude for c in self.detector_configs
+        }
+        label_conf_thres: dict[str, float] = {
+            c.name: c.detection_threshold for c in self.detector_configs
+        }
+        config_dict = {
+            "labels": labels,
+            "inc_sub_labels_dict": inc_sub_labels_dict,
+            "exc_sub_labels_dict": exc_sub_labels_dict,
+            "augment_examples": self.augment_examples,
+            "nms_threshold": self.nms_threshold,
+            "class_agnostic_nms": self.class_agnostic_nms,
+            "label_conf_thres": label_conf_thres,
+        }
 
         if self.deployed_id is not None:
             key_exists = await config_cache.exists(self.deployed_id)
@@ -144,6 +149,7 @@ class DetectorDeploy(BaseModel):
             self.deployed_id = str(uuid.uuid4())
         else:
             message = "Model updated."
+
         assert (
             self.deployed_id is not None
         ), "deployed_id should not be None at this point"
@@ -159,12 +165,3 @@ class SingleDetectionResponse(BaseModel):
 
     class Config:
         allow_population_by_field_name = True
-
-
-class VerboseDetectorConfig(BaseModel):
-    name: str
-
-    incs: List[str]
-    excs: List[str] = []
-
-    thresh: Optional[float] = None

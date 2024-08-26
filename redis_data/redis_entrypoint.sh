@@ -8,7 +8,7 @@ cleanup() {
 trap 'cleanup' SIGTERM
 
 #Execute a command in the background
-redis-server --requirepass "default_password" --appendonly "yes" --appendfsync "always" &
+redis-server --requirepass "default_password" --appendonly "yes" --appendfsync "always" --port 6379 &
 
 #Save the PID of the background process
 REDIS_PID=$!

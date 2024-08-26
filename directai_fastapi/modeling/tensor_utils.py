@@ -72,9 +72,9 @@ def batch_encode_cache_missed_list_elements(
     return output_tensor
 
 
-def image_bytes_to_tensor(image: bytes, image_size: tuple[int, int]) -> torch.Tensor:
-    image_buffer = io.BytesIO(image)
-    pil_image = Image.open(image_buffer)
+def resize_pil_image(
+    pil_image: Image.Image, image_size: tuple[int, int]
+) -> Image.Image:
     if pil_image.format == "JPEG":
         # try requesting a format-specific conversion
         # this significantly speeds up the subsequent resize operation
@@ -83,6 +83,42 @@ def image_bytes_to_tensor(image: bytes, image_size: tuple[int, int]) -> torch.Te
         pil_image.draft("RGB", image_size)
     pil_image = pil_image.convert("RGB")
     pil_image = pil_image.resize(image_size, Image.BICUBIC)
+    return pil_image
+
+
+def image_bytes_to_tensor(image: bytes, image_size: tuple[int, int]) -> torch.Tensor:
+    image_buffer = io.BytesIO(image)
+    pil_image = Image.open(image_buffer)
+    pil_image = resize_pil_image(pil_image, image_size)
     np_image = np.asarray(pil_image)
     tensor = torch.tensor(np_image).permute(2, 0, 1).unsqueeze(0)
     return tensor
+
+
+def squish_labels(
+    labels: list[str],
+    inc_sub_labels_dict: dict[str, list[str]],
+    exc_sub_labels_dict: dict[str, list[str]],
+) -> tuple[list[str], dict[str, int]]:
+    # build one list of labels to encode, without duplicates
+    # and lists / dicts containing the indices of each label
+    # and the indices of each label's sub-labels
+    all_labels_to_inds: dict[str, int] = {}
+    all_labels = []
+
+    for label in labels:
+        inc_subs = inc_sub_labels_dict.get(label)
+        if inc_subs is not None:
+            for inc_sub in inc_subs:
+                if inc_sub not in all_labels_to_inds:
+                    all_labels_to_inds[inc_sub] = len(all_labels_to_inds)
+                    all_labels.append(inc_sub)
+
+        exc_subs = exc_sub_labels_dict.get(label)
+        if exc_subs is not None:
+            for exc_sub in exc_subs:
+                if exc_sub not in all_labels_to_inds:
+                    all_labels_to_inds[exc_sub] = len(all_labels_to_inds)
+                    all_labels.append(exc_sub)
+
+    return all_labels, all_labels_to_inds
