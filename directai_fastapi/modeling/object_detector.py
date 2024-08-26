@@ -499,6 +499,7 @@ def compute_iou_adjacency_list(
     boxes: torch.Tensor, nms_thre: float
 ) -> list[torch.Tensor]:
     boxes = boxes.clone()
+    # boxes are in cxcywh format, we need to convert them to tlbr format
     boxes[:, 0] -= boxes[:, 2] / 2
     boxes[:, 1] -= boxes[:, 3] / 2
     boxes[:, 2] = boxes[:, 0] + boxes[:, 2]
