@@ -115,15 +115,6 @@ def flash_attn_owl_vit_encoder_forward(
     return attn_output, None
 
 
-# we're copying the function signature from the original
-# and just replacing the method with a faster one based on flash_attn
-# we could subclass the original, but that would require us to subclass the entire model
-# so we're just going to monkey patch it, as the output should be identical with the same inputs
-# Owlv2Attention.forward = flash_attn_owl_vit_encoder_forward
-# for owlv2_vision_model_encoder_layer in Owlv2VisionModel.vision_model.encoder.layers:
-#     owlv2_vision_model_encoder_layer.self_attn.forward = flash_attn_owl_vit_encoder_forward
-
-
 class VisionModelWrapper(nn.Module):
     def __init__(self, vision_model: Owlv2VisionModel) -> None:
         super().__init__()
@@ -134,7 +125,7 @@ class VisionModelWrapper(nn.Module):
         # to replace it with a faster one based on flash_attn
         # the alternative is to subclass the entire model, but that's a lot of work
         # so we're just going to define a replacement with the same function signature
-        # and assert that the input is as expected
+        # and assert that the input is as supported by flash_attn
         for owlv2_vision_model_encoder_layer in self.vision_model.encoder.layers:
             owlv2_vision_model_encoder_layer.self_attn.forward = partial(
                 flash_attn_owl_vit_encoder_forward,
@@ -164,8 +155,9 @@ class WrappedImageEmbedder(nn.Module):
         image_embeds = self.wrapped_vision_model(image)
 
         # Resize class token
-        new_size = tuple(np.array(image_embeds.shape) - np.array((0, 1, 0)))
-        class_token_out = torch.broadcast_to(image_embeds[:, :1, :], new_size)
+        class_token_out = torch.broadcast_to(
+            image_embeds[:, :1, :], image_embeds[:, 1:, :].shape
+        )
 
         # Merge image embedding with class tokens
         image_embeds = image_embeds[:, 1:, :] * class_token_out
@@ -223,6 +215,8 @@ class ZeroShotObjectDetectorWithFeedback(nn.Module):
         self,
         model_name: str = "google/owlv2-large-patch14-ensemble",
         image_size: tuple[int, int] = (1008, 1008),
+        max_text_batch_size: int = 256,
+        max_image_batch_size: int = 256,
         device: torch.device | str = "cuda",
         lru_cache_size: int = 4096,
         jit: bool = True,
@@ -242,6 +236,9 @@ class ZeroShotObjectDetectorWithFeedback(nn.Module):
             )
         else:
             self.wrapped_image_embedder = WrappedImageEmbedder(self.model)
+
+        self.max_text_batch_size = max_text_batch_size
+        self.max_image_batch_size = max_image_batch_size
 
         # we cache the text embeddings to avoid recomputing them
         # we use an LRU cache to avoid running out of memory
@@ -266,21 +263,28 @@ class ZeroShotObjectDetectorWithFeedback(nn.Module):
         templates = medium_hypothesis_formats if augment else noop_hypothesis_formats
         augmented_text = [template.format(t) for t in text for template in templates]
 
-        processor_output = self.processor(
-            text=augmented_text, return_tensors="pt", padding=True, truncation=True
-        )
-        input_ids = processor_output.input_ids.to(self.device)
-        attn_mask = processor_output.attention_mask.to(self.device)
+        embeddings_list = []
+        for i in range(0, len(augmented_text), self.max_text_batch_size):
+            text_subset = augmented_text[i : i + self.max_text_batch_size]
 
-        # TODO: add appropriate batching to avoid OOM
-        text_output = self.model.owlv2.text_model(
-            input_ids=input_ids, attention_mask=attn_mask, return_dict=True
-        )
+            processor_output = self.processor(
+                text=text_subset, return_tensors="pt", padding=True, truncation=True
+            )
+            input_ids = processor_output.input_ids.to(self.device)
+            attn_mask = processor_output.attention_mask.to(self.device)
 
-        embeddings = text_output[1]
-        embeddings = self.model.owlv2.text_projection(embeddings)
-        embeddings = embeddings / embeddings.norm(dim=1, keepdim=True, p=2)
+            # TODO: add appropriate batching to avoid OOM
+            text_output = self.model.owlv2.text_model(
+                input_ids=input_ids, attention_mask=attn_mask, return_dict=True
+            )
 
+            embeddings = text_output[1]
+            embeddings = self.model.owlv2.text_projection(embeddings)
+            embeddings = embeddings / embeddings.norm(dim=1, keepdim=True, p=2)
+
+            embeddings_list.append(embeddings)
+
+        embeddings = torch.cat(embeddings_list, dim=0)
         embeddings = embeddings.reshape(len(text), len(templates), embeddings.shape[1])
         embeddings = embeddings.mean(dim=1)
         embeddings = embeddings / embeddings.norm(dim=1, keepdim=True, p=2)
@@ -306,9 +310,25 @@ class ZeroShotObjectDetectorWithFeedback(nn.Module):
         image = image / 255.0
         image = (image - self.rgb_means) / self.rgb_stds
 
-        image_class_embeds, logit_shift, logit_scale, pred_boxes = (
-            self.wrapped_image_embedder(image)
-        )
+        image_class_embeds_list = []
+        logit_shift_list = []
+        logit_scale_list = []
+        pred_boxes_list = []
+        for i in range(0, image.size(0), self.max_image_batch_size):
+            image_subset = image[i : i + self.max_image_batch_size]
+            image_class_embeds, logit_shift, logit_scale, pred_boxes = (
+                self.wrapped_image_embedder(image_subset)
+            )
+
+            image_class_embeds_list.append(image_class_embeds)
+            logit_shift_list.append(logit_shift)
+            logit_scale_list.append(logit_scale)
+            pred_boxes_list.append(pred_boxes)
+
+        image_class_embeds = torch.cat(image_class_embeds_list)
+        logit_shift = torch.cat(logit_shift_list)
+        logit_scale = torch.cat(logit_scale_list)
+        pred_boxes = torch.cat(pred_boxes_list)
 
         return {
             "image_class_embeds": image_class_embeds,
@@ -350,6 +370,9 @@ class ZeroShotObjectDetectorWithFeedback(nn.Module):
 
         if any([len(sub_labels) == 0 for sub_labels in inc_sub_labels_dict.values()]):
             raise ValueError("Each label must include at least one sub-label")
+
+        if image_tensor.shape[0] > 1:
+            raise ValueError("Batched image inputs are not yet supported")
 
         image_tensor = image_tensor.to(self.device)
 
@@ -629,10 +652,10 @@ def compute_candidate_nms_via_adjacency_list(
         survive_inds = pro_valid.nonzero().squeeze(1)
         return survive_inds
 
-    # we then run a NMS over the (remaining) boxes
     survive_inds = pro_valid_inds[pro_max[pro_valid].argsort(descending=True)]
 
     if run_nms:
+        # we then run a NMS over the (remaining) boxes
         survive_inds = run_nms_via_adjacency_list(survive_inds, modified_adjacency_list)
 
     return survive_inds

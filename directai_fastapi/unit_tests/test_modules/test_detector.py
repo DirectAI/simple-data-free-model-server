@@ -125,7 +125,7 @@ class TestObjectDetector(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.object_detector = ZeroShotObjectDetectorWithFeedback()
+        cls.object_detector = ZeroShotObjectDetectorWithFeedback(jit=True)
 
         coke_bottle_filepath = "unit_tests/sample_data/coke_through_the_ages.jpeg"
         with open(coke_bottle_filepath, "rb") as f:
@@ -163,3 +163,43 @@ class TestObjectDetector(unittest.TestCase):
             moose_boxes = predicted_boxes[1]
             self.assertEqual(len(bottle_boxes), 9)
             self.assertEqual(len(moose_boxes), 0)
+
+    @unittest.skip("We don't yet support batched object detection")
+    def test_batched_detect(self) -> None:
+        with torch.no_grad():
+            random_images = torch.rand(16, 3, *self.object_detector.image_size)
+            image_scale_ratios = torch.ones(16)
+
+            single_image_outputs_list = []
+            for image in random_images:
+                single_image_outputs_list.append(
+                    self.object_detector(
+                        image.unsqueeze(0),
+                        labels=self.default_labels,
+                        inc_sub_labels_dict=self.default_incs,
+                        exc_sub_labels_dict=None,
+                        nms_thre=self.default_nms_thre,
+                        label_conf_thres={"bottle": 0.0, "moose": 0.0},
+                        image_scale_ratios=image_scale_ratios,
+                    )[0]
+                )
+
+            batched_outputs = self.object_detector(
+                random_images,
+                labels=self.default_labels,
+                inc_sub_labels_dict=self.default_incs,
+                exc_sub_labels_dict=None,
+                nms_thre=self.default_nms_thre,
+                label_conf_thres={"bottle": 0.0, "moose": 0.0},
+                image_scale_ratios=image_scale_ratios,
+            )
+
+        for i in range(16):
+            for j in range(2):
+                from_batch = batched_outputs[i][j]
+                from_single = single_image_outputs_list[i][j]
+                self.assertEqual(from_batch.shape, from_single.shape)
+                if from_batch.shape[0] == 0:
+                    continue
+                max_diff = (from_batch - from_single).abs().max().item()
+                self.assertTrue(max_diff < 1e-5)
