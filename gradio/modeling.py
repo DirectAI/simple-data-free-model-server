@@ -5,7 +5,7 @@ import numpy as np
 from typing import Union
 
 FASTAPI_HOST = "host.docker.internal"
-FASTAPI_PORT = 8001
+FASTAPI_PORT = 8000
 endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
 
 

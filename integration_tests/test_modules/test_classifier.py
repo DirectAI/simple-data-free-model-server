@@ -29,7 +29,7 @@ def compute_kl_divergence_based_classification_loss(
 class TestClassifyDeploy(unittest.TestCase):
     def __init__(self, methodName: str = "runTest"):
         super().__init__(methodName=methodName)
-        self.endpoint = f"http://{FASTAPI_HOST}:8001/"
+        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
 
     def test_deploy_classifier_config_missing(self) -> None:
         body: dict = {}
@@ -121,7 +121,7 @@ class TestClassifyDeploy(unittest.TestCase):
 class TestClassifyInference(unittest.TestCase):
     def __init__(self, methodName: str = "runTest"):
         super().__init__(methodName=methodName)
-        self.endpoint = f"http://{FASTAPI_HOST}:8001/"
+        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
         # here we assume that deploy has been tested and works
         # so we can generate a fixed deploy id for testing
         body = {

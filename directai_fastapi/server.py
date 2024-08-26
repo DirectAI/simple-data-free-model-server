@@ -36,7 +36,7 @@ def grab_redis_endpoint(
     if password is None:
         password = os.environ.get("CACHE_REDIS_PASSWORD", "default_password")
     if port is None:
-        port = os.environ.get("CACHE_REDIS_PORT", 6371)
+        port = os.environ.get("CACHE_REDIS_PORT", 6379)
     return f"redis://{username}:{password}@{host}:{port}"
 
 

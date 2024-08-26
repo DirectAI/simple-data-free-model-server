@@ -58,14 +58,12 @@ with gr.Blocks(css=css) as demo:
             def render_count(
                 class_states_val: list, class_idx: int, is_accordion_open: bool
             ) -> None:
-                print("rendering count!", class_states_val)
                 count_val = len(class_states_val)
 
                 for i in range(count_val):
                     class_label = class_states_val[i]["name"]
                     to_include_list = class_states_val[i]["examples_to_include"]
                     to_exclude_list = class_states_val[i]["examples_to_exclude"]
-                    print(class_label, to_include_list, to_exclude_list)
 
                     with gr.Group(class_label, elem_id=f"tab_{i}"):
                         box = gr.Textbox(
@@ -182,10 +180,7 @@ with gr.Blocks(css=css) as demo:
             def render_results(
                 class_states_val: list, img_to_display: Union[Image.Image, np.ndarray]
             ) -> None:
-                print("render_results!")
-                print(class_states_val, type(img_to_display))
                 if img_to_display is not None:
-                    print("image isn't none!")
                     inference_results, error_text = deploy_and_infer(
                         img_to_display, class_states_val
                     )

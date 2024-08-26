@@ -94,7 +94,7 @@ def compute_naive_bipartite_detection_loss(
 class TestDetect(unittest.TestCase):
     def __init__(self, methodName: str = "runTest") -> None:
         super().__init__(methodName=methodName)
-        self.endpoint = f"http://{FASTAPI_HOST}:8001/"
+        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
 
     def test_deploy_detector_config_missing(self) -> None:
         body: Dict[str, str] = {}
