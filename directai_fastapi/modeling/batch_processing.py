@@ -54,6 +54,32 @@ def build_ray_dataset_from_directory(
     return ds
 
 
+def filter_dataset_by_path(
+    dataset: ray.data.Dataset,
+    paths_set: set[str] | None = None,
+    paths_file: str | None = None,
+) -> ray.data.Dataset:
+    if paths_set is None:
+        assert paths_file is not None
+        with open(paths_file, "r") as file:
+            paths_set = set(file.read().splitlines())
+
+    return dataset.filter(lambda x: x["path"] in paths_set)
+
+
+def filter_dataset_by_label(
+    dataset: ray.data.Dataset,
+    labels_set: set[str] | None = None,
+    labels_file: str | None = None,
+) -> ray.data.Dataset:
+    if labels_set is None:
+        assert labels_file is not None
+        with open(labels_file, "r") as file:
+            labels_set = set(file.read().splitlines())
+
+    return dataset.filter(lambda x: x["label"] in labels_set)
+
+
 def get_labels_from_directory(
     root: str,
 ) -> list[str]:
@@ -128,7 +154,7 @@ class RayDataImageClassifier:
             )
             scores = torch.nn.functional.softmax(raw_scores / 0.07, dim=1)
             ind = scores.argmax(dim=1).cpu().numpy()
-            pred = np.array([labels[i] for i in ind])
+            pred = np.array([self.labels[i] for i in ind])
 
         batch["scores"] = scores.cpu().numpy()
         batch["pred"] = pred
@@ -235,11 +261,7 @@ if __name__ == "__main__":
     # for this specific dataset, we can split it according to the provided test.txt and train.txt files
     split = "test"
     split_file = os.path.join(food101_root_dir, "food-101", "meta", f"{split}.txt")
-    with open(split_file, "r") as file:
-        split_list = file.read().splitlines()
-    split_set = set(split_list)
-    # we then filter rows based on whether the path is in the split set
-    ds = ds.filter(lambda x: x["path"] in split_set)
+    ds = filter_dataset_by_path(ds, paths_file=split_file)
 
     inc_sub_labels_dict = {
         label: [

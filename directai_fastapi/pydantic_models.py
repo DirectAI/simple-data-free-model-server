@@ -3,7 +3,7 @@ import json
 from logging_config import logger
 from fastapi import HTTPException
 from pydantic import BaseModel, conlist, Field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, TypeVar, Type
 import redis.asyncio as redis
 
 
@@ -27,6 +27,9 @@ class SingleClassifierClass(BaseModel):
         orm_mode = True
 
 
+_ClassifierDeploy = TypeVar("_ClassifierDeploy", bound="ClassifierDeploy")
+
+
 class ClassifierDeploy(BaseModel):
     classifier_configs: List[SingleClassifierClass]
     deployed_id: Optional[str] = None
@@ -35,14 +38,13 @@ class ClassifierDeploy(BaseModel):
     class Config:
         orm_mode = True
 
-    async def save_configuration(self, config_cache: redis.Redis) -> dict:
-        logger.info(f"Classifier Configs: {self.classifier_configs}")
+    def build_config_dict(self) -> dict:
+        logger.debug(f"Classifier Configs: {self.classifier_configs}")
         for classifier_config in self.classifier_configs:
-            logger.info(classifier_config.examples_to_include)
+            logger.debug(classifier_config.examples_to_include)
             if len(classifier_config.examples_to_include) == 0:
-                raise HTTPException(
-                    status_code=422,
-                    detail=f"Model lacks example_to_include for {classifier_config.name} class.",
+                raise ValueError(
+                    f"Model lacks example_to_include for {classifier_config.name} class."
                 )
         labels = [c.name for c in self.classifier_configs]
         inc_sub_labels_dict: dict[str, List[str]] = {
@@ -57,6 +59,38 @@ class ClassifierDeploy(BaseModel):
             "exc_sub_labels_dict": exc_sub_labels_dict,
             "augment_examples": self.augment_examples,
         }
+
+        return config_dict
+
+    @classmethod
+    def from_config_dict(
+        cls: Type[_ClassifierDeploy], config_dict: dict
+    ) -> _ClassifierDeploy:
+        classifier_configs = [
+            SingleClassifierClass(
+                name=k,
+                examples_to_include=v,
+                examples_to_exclude=(
+                    config_dict["exc_sub_labels_dict"].get(k, [])
+                    if config_dict.get("exc_sub_labels_dict")
+                    else []
+                ),
+            )
+            for k, v in config_dict["inc_sub_labels_dict"].items()
+        ]
+        return cls(
+            classifier_configs=classifier_configs,
+            augment_examples=config_dict["augment_examples"],
+        )
+
+    async def save_configuration(self, config_cache: redis.Redis) -> dict:
+        try:
+            config_dict = self.build_config_dict()
+        except ValueError as e:
+            raise HTTPException(
+                status_code=422,
+                detail=f"{e}",
+            )
 
         if self.deployed_id is not None:
             key_exists = await config_cache.exists(self.deployed_id)

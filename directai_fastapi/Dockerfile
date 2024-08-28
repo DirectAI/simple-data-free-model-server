@@ -21,6 +21,8 @@ COPY server.py .
 COPY run.sh .
 COPY utils.py .
 
+COPY classify_directory.py .
+
 RUN mkdir unit_tests
 COPY unit_tests unit_tests
 
