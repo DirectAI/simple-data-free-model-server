@@ -1,12 +1,10 @@
 import json
-
 import gradio as gr  # type: ignore[import-untyped]
 from functools import partial
 from typing import Tuple
-
-
 from PIL import Image
 import numpy as np
+
 
 from utils import (
     upload_file,
@@ -18,8 +16,9 @@ from utils import (
     update_class_detection_threshold,
     update_models_state,
     update_nms_threshold,
-    DualModelInterface,
 )
+
+from modeling import DualModelInterface
 
 from typing import Union
 
@@ -50,12 +49,6 @@ with gr.Blocks(css=css) as demo:
                     current_class_idx,
                     current_accordion_open,
                     models_state_proxy,
-                ],
-                triggers=[
-                    models_state.change,
-                    current_class_idx.change,
-                    current_accordion_open.change,
-                    models_state_proxy.change,
                 ],
             )
             def render_count(
