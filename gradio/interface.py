@@ -27,7 +27,8 @@ css = """
 
 with gr.Blocks(css=css) as demo:
     models_state = gr.State(DualModelInterface())
-    # TLDR: Gradio State isn't properly modi
+    # TLDR: Gradio State isn't properly managing complex state variables so we track model changes by pairing with a boolean
+    # See message in Gradio discord: https://discord.com/channels/879548962464493619/1278443437175345272/1278443437175345272
     models_state_proxy = gr.State(False)
     current_class_idx = gr.State(0)
     current_accordion_open = gr.State(False)
