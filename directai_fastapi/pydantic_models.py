@@ -40,6 +40,10 @@ class ClassifierDeploy(BaseModel):
 
     def build_config_dict(self) -> dict:
         logger.debug(f"Classifier Configs: {self.classifier_configs}")
+        if len(self.classifier_configs) == 0:
+            raise ValueError(
+                f"Class list is empty.",
+            )
         for classifier_config in self.classifier_configs:
             logger.debug(classifier_config.examples_to_include)
             if len(classifier_config.examples_to_include) == 0:

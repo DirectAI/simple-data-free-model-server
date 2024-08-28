@@ -1,0 +1,9 @@
+gradio==4.41.0
+numpy==1.26.3
+mypy==1.11.1
+pillow==9.2.0
+types-Pillow==9.2.0
+
+# gradio requires urllib3~=2.0, the old version of requests required an earlier version
+requests==2.31.0
+types-requests==2.31.0.7
