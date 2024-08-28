@@ -27,6 +27,7 @@ css = """
 
 with gr.Blocks(css=css) as demo:
     models_state = gr.State(DualModelInterface())
+    # TLDR: Gradio State isn't properly modi
     models_state_proxy = gr.State(False)
     current_class_idx = gr.State(0)
     current_accordion_open = gr.State(False)
@@ -229,14 +230,19 @@ with gr.Blocks(css=css) as demo:
                                             class_threshold,
                                             models_state_proxy,
                                         ],
-                                        outputs=[models_state, models_state_proxy],
+                                        outputs=[
+                                            models_state,
+                                            models_state_proxy,
+                                            current_class_idx,
+                                            current_accordion_open,
+                                        ],
                                     )
 
                     if models_state_val.current_model_type == "Detector":
                         nms_threshold = gr.Slider(
                             minimum=0,
                             maximum=1.0,
-                            value=0.4,
+                            value=models_state_val.detector_state.nms_threshold,
                             label="NMS Threshold",
                             interactive=True,
                         )
@@ -273,11 +279,13 @@ with gr.Blocks(css=css) as demo:
                 models_state_proxy_val: bool,
             ) -> None:
                 if img_to_display is not None:
-                    inference_results, error_text = deploy_and_infer(
-                        img_to_display, models_state_val
-                    )
-                    _ = gr.Label(inference_results)
-                    _ = gr.Markdown(error_text)
+                    if models_state_val.current_model_type == "Detector":
+                        gr.Info("Detection Inference not yet supported.")
+                    else:
+                        inference_results = deploy_and_infer(
+                            img_to_display, models_state_val
+                        )
+                        _ = gr.Label(inference_results)
 
 
 demo.launch(server_name="0.0.0.0")

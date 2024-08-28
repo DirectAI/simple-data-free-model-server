@@ -1,5 +1,6 @@
 import json
 import requests
+import gradio as gr  # type: ignore[import-untyped]
 
 from typing import Tuple, Union, List, Optional
 import numpy as np
@@ -19,12 +20,14 @@ from modeling import (
 def upload_file(
     file_bytes: bytes, models_state_val: DualModelInterface, proxy_bool: bool
 ) -> Tuple[DualModelInterface, bool]:
-    json_data = json.loads(file_bytes.decode("utf-8"))
-
-    if models_state_val.current_model_type == "Classifier":
-        models_state_val.classifier_state = ClassifierDeploy.parse_obj(json_data)
-    elif models_state_val.current_model_type == "Detector":
-        models_state_val.detector_state = DetectorDeploy.parse_obj(json_data)
+    try:
+        json_data = json.loads(file_bytes.decode("utf-8"))
+        if models_state_val.current_model_type == "Classifier":
+            models_state_val.classifier_state = ClassifierDeploy.parse_obj(json_data)
+        elif models_state_val.current_model_type == "Detector":
+            models_state_val.detector_state = DetectorDeploy.parse_obj(json_data)
+    except Exception:
+        gr.Info("Error Parsing JSON", duration=2)
 
     return models_state_val, not proxy_bool
 
@@ -34,11 +37,11 @@ def update_class_detection_threshold(
     models_state_val: DualModelInterface,
     threshold_val: float,
     proxy_bool: bool,
-) -> Tuple[DualModelInterface, bool]:
+) -> Tuple[DualModelInterface, bool, int, bool]:
     models_state_val.detector_state.detector_configs[class_idx].detection_threshold = (
         threshold_val
     )
-    return models_state_val, not proxy_bool
+    return models_state_val, not proxy_bool, class_idx, True
 
 
 def update_nms_threshold(
@@ -213,27 +216,33 @@ def change_example_count(
 
 def deploy_and_infer(
     to_display: Union[Image.Image, np.ndarray], models_state_val: DualModelInterface
-) -> Tuple[dict, str]:
+) -> dict:
     if to_display is None:
-        return {}, ""
+        return {}
     try:
         deployed_id = deploy_classifier(models_state_val.classifier_state.dict())
         classify_results = get_classifier_results(to_display, deployed_id)
-        return classify_results, ""
+        return classify_results
     except json.decoder.JSONDecodeError as e:
-        return {}, "**JSON Decode Error** in Model Deploy or Classification Response"
+        gr.Info(
+            "JSON Decode Error in Model Deploy or Classification Response", duration=2
+        )
+        return {}
     except requests.exceptions.ConnectionError as ce:
-        return (
-            {},
-            "**Request Connection Error** in Model Deploy or Classification Response",
+        gr.Info(
+            "Request Connection Error in Model Deploy or Classification Response",
+            duration=2,
         )
+        return {}
     except ValueError as ve:
-        return {}, str(ve)
+        gr.Info(str(ve), duration=2)
+        return {}
     except Exception as e:
-        return (
-            {},
-            "**Generic Exception** in Model Deploy or Classification Response. Please try again.",
+        gr.Info(
+            "Generic Exception** in Model Deploy or Classification Response. Please try again.",
+            duration=2,
         )
+        return {}
 
 
 def update_models_state(
