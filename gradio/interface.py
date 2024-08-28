@@ -23,7 +23,6 @@ from utils import (
 
 from typing import Union
 
-
 css = """
 #configuration_accordion {background-color: #0B0F19}
 """
