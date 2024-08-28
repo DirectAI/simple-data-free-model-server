@@ -33,7 +33,7 @@ def build_ray_dataset_from_directory(
     # we expect images to be stored directly in the root directory
     # unless with_subdirs_as_labels is set to True
     # in which case we expect images to be stored in subdirectories
-    # the sames of which will be used as labels for the images
+    # the names of which will be used as labels for the images
     if with_subdirs_as_labels:
         partitioning = Partitioning(
             PartitionStyle.DIRECTORY,
@@ -278,12 +278,6 @@ if __name__ == "__main__":
         inc_sub_labels_dict=inc_sub_labels_dict,
         augment_examples=augment_examples,
     )
-
-    # we compute the mean of the is_correct column to get the accuracy
-    # since Ray data pipelines are lazy, this triggers actually running the pipeline
-    # accuracy = predictions.mean("is_correct")
-
-    # print(f"Accuracy on {split} set: {accuracy}")
 
     write_predictions_to_csv(
         predictions,
