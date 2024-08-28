@@ -1,7 +1,6 @@
 import json
 import gradio as gr  # type: ignore[import-untyped]
 from functools import partial
-from typing import Tuple
 from PIL import Image
 import numpy as np
 

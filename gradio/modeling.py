@@ -17,7 +17,7 @@ class SingleClassifierClass(BaseModel):
 
     class Config:
         from_attributes = True
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class ClassifierDeploy(BaseModel):
@@ -26,7 +26,7 @@ class ClassifierDeploy(BaseModel):
     augment_examples: Optional[bool] = True
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
     def add_class(self, name: str = "") -> None:
         if name == "":
@@ -46,7 +46,7 @@ class SingleDetectorClass(BaseModel):
     detection_threshold: float = 0.1
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 
 class DetectorDeploy(BaseModel):
@@ -57,7 +57,7 @@ class DetectorDeploy(BaseModel):
     augment_examples: Optional[bool] = True
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         from_attributes = True
 
     def add_class(self, name: str = "") -> None:
