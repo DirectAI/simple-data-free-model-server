@@ -110,8 +110,8 @@ with gr.Blocks(css=css) as demo:
                             )
                             box.submit(
                                 fn=partial(update_class_label, i),
-                                inputs=[box, models_state],
-                                outputs=[models_state],
+                                inputs=[box, models_state, models_state_proxy],
+                                outputs=[models_state, models_state_proxy],
                             )
                             with gr.Accordion(
                                 "advanced configuration",
@@ -163,11 +163,11 @@ with gr.Blocks(css=css) as demo:
                                             inputs=[
                                                 curr_inc,
                                                 models_state,
-                                                models_state_proxy_val,
+                                                models_state_proxy,
                                             ],
                                             outputs=[
                                                 models_state,
-                                                models_state_proxy_val,
+                                                models_state_proxy,
                                             ],
                                         )
 
