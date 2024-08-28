@@ -21,11 +21,15 @@ COPY server.py .
 COPY run.sh .
 COPY utils.py .
 
+COPY classify_directory.py .
+
 RUN mkdir unit_tests
 COPY unit_tests unit_tests
 
 RUN mkdir modeling
 COPY modeling modeling
+
+ENV PYTHONPATH "${PYTHONPATH}:/directai_fastapi"
 
 RUN chmod +x run.sh
 CMD ./run.sh
