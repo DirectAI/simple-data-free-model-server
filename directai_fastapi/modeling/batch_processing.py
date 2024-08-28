@@ -80,6 +80,69 @@ def preprocess_image_for_classifier(
     return row
 
 
+class RayDataImageClassifier:
+    def __init__(
+        self,
+        labels: list[str],
+        inc_sub_labels_dict: dict[str, list[str]],
+        exc_sub_labels_dict: dict[str, list[str]] | None = None,
+        augment_examples: bool = True,
+    ) -> None:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = ZeroShotImageClassifierWithFeedback(device=self.device)
+
+        self.labels = labels
+        self.inc_sub_labels_dict = inc_sub_labels_dict
+        self.exc_sub_labels_dict = exc_sub_labels_dict
+        self.augment_examples = augment_examples
+
+        self.fill_cache()
+
+    def fill_cache(self) -> None:
+        # compute embeddings for all prompts and warm up autocasting
+        for _ in range(4):
+            rand_image = np.random.rand(1, 3, 224, 224).astype(np.float32)
+            batch: dict[str, np.ndarray] = {
+                "image": rand_image,
+                "label": np.array(
+                    [
+                        "dummy",
+                    ]
+                ),
+            }
+            self(batch)
+
+    def __call__(
+        self,
+        batch: dict[str, np.ndarray],
+    ) -> dict[str, np.ndarray]:
+        images = torch.from_numpy(batch.pop("image")).to(self.device)
+
+        with torch.inference_mode(), torch.autocast(str(self.model.device)):
+            raw_scores = self.model(
+                images,
+                labels=self.labels,
+                inc_sub_labels_dict=self.inc_sub_labels_dict,
+                exc_sub_labels_dict=self.exc_sub_labels_dict,
+                augment_examples=self.augment_examples,
+            )
+            scores = torch.nn.functional.softmax(raw_scores / 0.07, dim=1)
+            ind = scores.argmax(dim=1).cpu().numpy()
+            pred = np.array([labels[i] for i in ind])
+
+        batch["scores"] = scores.cpu().numpy()
+        batch["pred"] = pred
+
+        if "label" in batch:
+            is_correct = np.array(
+                [p == l for p, l in zip(pred, batch["label"])], dtype=np.float32
+            )
+
+            batch["is_correct"] = is_correct
+
+        return batch
+
+
 def run_image_classifier_against_ray_dataset(
     ds: ray.data.Dataset,
     batch_size: int,
@@ -104,74 +167,17 @@ def run_image_classifier_against_ray_dataset(
         partial(preprocess_image_for_classifier, image_size=(224, 224))
     )
 
-    # we need to build a class that takes no arguments to be able to use map_batches
-    # so we just build one that takes its constructor arguments from the outer scope
-    class RayDataImageClassifier:
-        def __init__(self) -> None:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = ZeroShotImageClassifierWithFeedback(device=self.device)
-
-            nonlocal labels
-            nonlocal inc_sub_labels_dict
-            nonlocal exc_sub_labels_dict
-            nonlocal augment_examples
-
-            self.labels = labels
-            self.inc_sub_labels_dict = inc_sub_labels_dict
-            self.exc_sub_labels_dict = exc_sub_labels_dict
-            self.augment_examples = augment_examples
-
-            self.fill_cache()
-
-        def fill_cache(self) -> None:
-            # compute embeddings for all prompts and warm up autocasting
-            for _ in range(4):
-                rand_image = np.random.rand(1, 3, 224, 224).astype(np.float32)
-                batch: dict[str, np.ndarray] = {
-                    "image": rand_image,
-                    "label": np.array(
-                        [
-                            "dummy",
-                        ]
-                    ),
-                }
-                self(batch)
-
-        def __call__(
-            self,
-            batch: dict[str, np.ndarray],
-        ) -> dict[str, np.ndarray]:
-            images = torch.from_numpy(batch.pop("image")).to(self.device)
-
-            with torch.inference_mode(), torch.autocast(str(self.model.device)):
-                raw_scores = self.model(
-                    images,
-                    labels=self.labels,
-                    inc_sub_labels_dict=self.inc_sub_labels_dict,
-                    exc_sub_labels_dict=self.exc_sub_labels_dict,
-                    augment_examples=self.augment_examples,
-                )
-                scores = torch.nn.functional.softmax(raw_scores / 0.07, dim=1)
-                ind = scores.argmax(dim=1).cpu().numpy()
-                pred = np.array([labels[i] for i in ind])
-
-            batch["scores"] = scores.cpu().numpy()
-            batch["pred"] = pred
-
-            if "label" in batch:
-                is_correct = np.array(
-                    [p == l for p, l in zip(pred, batch["label"])], dtype=np.float32
-                )
-
-                batch["is_correct"] = is_correct
-
-            return batch
-
     predictions = preprocessed_ds.map_batches(
         RayDataImageClassifier,
         batch_size=batch_size,
         concurrency=concurrency,
         num_gpus=num_gpus,
+        fn_constructor_kwargs={
+            "labels": labels,
+            "inc_sub_labels_dict": inc_sub_labels_dict,
+            "exc_sub_labels_dict": exc_sub_labels_dict,
+            "augment_examples": augment_examples,
+        },
     )
 
     return predictions
