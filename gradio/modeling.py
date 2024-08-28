@@ -5,13 +5,12 @@ import numpy as np
 from typing import Union
 
 FASTAPI_HOST = "host.docker.internal"
-FASTAPI_PORT = 8000
+FASTAPI_PORT = 8001
 endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
 
 
-def deploy_classifier(set_of_classes: list) -> str:
-    body = {"classifier_configs": set_of_classes}
-    response = requests.post(endpoint + "deploy_classifier", json=body)
+def deploy_classifier(classifier_config: dict) -> str:
+    response = requests.post(endpoint + "deploy_classifier", json=classifier_config)
     if response.status_code == 500:
         raise ValueError(response.text)
     response_json = response.json()
