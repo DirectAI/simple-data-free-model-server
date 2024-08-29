@@ -151,18 +151,22 @@ def classify_deploy_and_infer(
 
 
 def detect_deploy_and_infer(
-    to_display: Union[Image.Image, np.ndarray], models_state_val: DualModelInterface
+    to_display: Image.Image, models_state_val: DualModelInterface
 ) -> dict:
+    print("Type of to_display in detect_deploy_and_infer:", type(to_display))
     if to_display is None:
         return {}
     try:
+        print("about to deploy detector")
         deployed_id = deploy_detector(models_state_val.detector_state.dict())
+        print("Detector deployed id:", deployed_id)
         detection_results = get_detector_results(to_display, deployed_id)
         return detection_results
     except json.decoder.JSONDecodeError as e:
         gr.Info("JSON Decode Error in Model Deploy or Detection Response", duration=2)
         return {}
     except requests.exceptions.ConnectionError as ce:
+        print(ce)
         gr.Info(
             "Request Connection Error in Model Deploy or Detection Response",
             duration=2,

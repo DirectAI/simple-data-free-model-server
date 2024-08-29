@@ -1,4 +1,6 @@
 import json
+import os
+import io
 import gradio as gr  # type: ignore[import-untyped]
 from functools import partial
 from PIL import Image
@@ -18,6 +20,8 @@ from utils import (
     update_nms_threshold,
 )
 
+from illustrating import display_bounding_boxes
+
 from modeling import DualModelInterface, ModelType
 
 from typing import Union
@@ -33,7 +37,7 @@ with gr.Blocks(css=css) as demo:
     # when gradio releases a fix we can remove all mentions of `change_this_bool_to_force_reload` and maintain existing functionality
     change_this_bool_to_force_reload = gr.State(False)
     current_class_idx = gr.State(0)
-    current_accordion_open = gr.State(False)
+    current_class_accordion_open = gr.State(False)
 
     with gr.Row():
         with gr.Column():
@@ -50,14 +54,14 @@ with gr.Blocks(css=css) as demo:
                 inputs=[
                     models_state,
                     current_class_idx,
-                    current_accordion_open,
+                    current_class_accordion_open,
                     change_this_bool_to_force_reload,
                 ],
             )
-            def render_count(
+            def render_model_update(
                 models_state_val: DualModelInterface,
                 class_idx: int,
-                is_accordion_open: bool,
+                is_class_accordion_open: bool,
                 proxy_bool: bool,
             ) -> None:
                 if models_state_val.current_model_type is not None:
@@ -128,7 +132,7 @@ with gr.Blocks(css=css) as demo:
                             with gr.Accordion(
                                 "advanced configuration",
                                 elem_id="configuration_accordion",
-                                open=i == class_idx and is_accordion_open,
+                                open=i == class_idx and is_class_accordion_open,
                             ):
                                 with gr.Accordion("examples to include", open=True):
                                     with gr.Row():
@@ -147,7 +151,7 @@ with gr.Blocks(css=css) as demo:
                                             [
                                                 models_state,
                                                 current_class_idx,
-                                                current_accordion_open,
+                                                current_class_accordion_open,
                                                 change_this_bool_to_force_reload,
                                             ],
                                         )
@@ -168,7 +172,7 @@ with gr.Blocks(css=css) as demo:
                                             [
                                                 models_state,
                                                 current_class_idx,
-                                                current_accordion_open,
+                                                current_class_accordion_open,
                                                 change_this_bool_to_force_reload,
                                             ],
                                         )
@@ -206,7 +210,7 @@ with gr.Blocks(css=css) as demo:
                                             [
                                                 models_state,
                                                 current_class_idx,
-                                                current_accordion_open,
+                                                current_class_accordion_open,
                                                 change_this_bool_to_force_reload,
                                             ],
                                         )
@@ -227,7 +231,7 @@ with gr.Blocks(css=css) as demo:
                                             [
                                                 models_state,
                                                 current_class_idx,
-                                                current_accordion_open,
+                                                current_class_accordion_open,
                                                 change_this_bool_to_force_reload,
                                             ],
                                         )
@@ -271,7 +275,7 @@ with gr.Blocks(css=css) as demo:
                                         outputs=[
                                             models_state,
                                             current_class_idx,
-                                            current_accordion_open,
+                                            current_class_accordion_open,
                                             change_this_bool_to_force_reload,
                                         ],
                                     )
@@ -294,46 +298,120 @@ with gr.Blocks(css=css) as demo:
                             outputs=[models_state, change_this_bool_to_force_reload],
                         )
 
-                    # with gr.Group("Model Export"):
-                    # with gr.Accordion("Export JSON", open=False):
-                    model_json_textbox = gr.JSON(
-                        # label="Model JSON",
-                        value=models_state_val.display_dict(),
-                        container=True,
-                    )
+                    with gr.Accordion("Export JSON", open=True):
+                        model_json_textbox = gr.JSON(
+                            value=models_state_val.display_dict(),
+                        )
 
         with gr.Column():
-            img_to_display = gr.Image()
 
             @gr.render(
-                inputs=[models_state, img_to_display, change_this_bool_to_force_reload],
+                inputs=[models_state, change_this_bool_to_force_reload],
                 triggers=[
                     models_state.change,
-                    img_to_display.input,
                     change_this_bool_to_force_reload.change,
+                    # TODO: add demo launch as a trigger
                 ],
             )
-            def render_results(
+            def render_image(
                 models_state_val: DualModelInterface,
-                img_to_display: Union[Image.Image, np.ndarray],
                 proxy_bool: bool,
             ) -> None:
-                if img_to_display is not None:
+                def del_image() -> None:
+                    if os.path.exists("temp.jpg"):
+                        os.remove("temp.jpg")
+
+                def save_image(
+                    gradio_img: Union[Image.Image, np.ndarray, str]
+                ) -> Image.Image:
+                    print(type(gradio_img))
+                    if isinstance(gradio_img, np.ndarray):
+                        img_byte_arr = io.BytesIO()
+                        pil_image = Image.fromarray(gradio_img)
+                    elif isinstance(gradio_img, str):
+                        pil_image = Image.open(gradio_img)
+                    print(type(pil_image))
+                    pil_image.save("temp.jpg", format="JPEG")
                     if models_state_val.current_model_type == ModelType.DETECTOR:
                         inference_results = detect_deploy_and_infer(
-                            img_to_display, models_state_val
+                            to_display=pil_image, models_state_val=models_state_val
                         )
                         print(inference_results)
+                        illustrated_image = display_bounding_boxes(
+                            pil_image=pil_image,
+                            dets=inference_results[0],
+                            threshold=0.1,
+                        )
+                        return illustrated_image
                     elif models_state_val.current_model_type == ModelType.CLASSIFIER:
                         inference_results = classify_deploy_and_infer(
-                            img_to_display, models_state_val
+                            img_to_display.value, models_state_val
                         )
-                        _ = gr.Label(inference_results)
+                        output_label = gr.Label(inference_results)
+                        return pil_image
                     else:
                         gr.Info(
                             "No valid model config. Please select Detector or Classifier from the Dropdown.",
                             duration=5,
                         )
+                        return pil_image
+
+                # if os.path.exists("temp.jpg"):
+                #     pil_image = Image.open("temp.jpg")
+                #     if models_state_val.current_model_type == ModelType.DETECTOR:
+                #         inference_results = detect_deploy_and_infer(
+                #             to_display = pil_image,
+                #             models_state_val = models_state_val
+                #         )
+                #         print(inference_results)
+                #         illustrated_image = display_bounding_boxes(
+                #             gradio_img = pil_image,
+                #             dets= inference_results[0],
+                #             threshold= 0.1,
+                #         )
+                #         img_to_display = gr.Image(value=illustrated_image)
+                #     # render the image at the illustrated fp
+                #     else:
+                #         img_to_display = gr.Image(value=pil_image)
+                # else:
+                img_to_display = gr.Image()
+
+                img_to_display.clear(del_image)
+                img_to_display.input(
+                    save_image, inputs=img_to_display, outputs=img_to_display
+                )
+
+            # @gr.render(
+            #     inputs=[models_state, change_this_bool_to_force_reload],
+            #     triggers=[
+            #         models_state.change,
+            #         change_this_bool_to_force_reload.change,
+            #     ],
+            # )
+            # def render_results(
+            #     models_state_val: DualModelInterface,
+            #     proxy_bool: bool,
+            # ) -> None:
+            #     img_to_display = gr.Image(key="img_to_display")
+            #     # img_to_display.input(
+
+            #     # )
+            #     if img_to_display.value is not None:
+            #         if models_state_val.current_model_type == ModelType.DETECTOR:
+            #             inference_results = detect_deploy_and_infer(
+            #                 img_to_display.value, models_state_val
+            #             )
+            #             print(inference_results)
+            # elif models_state_val.current_model_type == ModelType.CLASSIFIER:
+            #     inference_results = classify_deploy_and_infer(
+            #         img_to_display.value, models_state_val
+            #     )
+            #     _ = gr.Label(inference_results)
+            # else:
+            #     gr.Info(
+            #         "No valid model config. Please select Detector or Classifier from the Dropdown.",
+            #         duration=5,
+            #     )
 
 
 demo.launch(server_name="0.0.0.0")
