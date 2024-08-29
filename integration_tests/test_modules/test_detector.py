@@ -7,6 +7,7 @@ from typing import Dict, List, Union, Any
 from scipy.optimize import linear_sum_assignment  # type: ignore[import-untyped]
 
 FASTAPI_HOST = "host.docker.internal"
+FASTAPI_PORT = 8000
 
 
 # copying over from directai_fastapi/pydantic_models.py
@@ -94,7 +95,7 @@ def compute_naive_bipartite_detection_loss(
 class TestDetect(unittest.TestCase):
     def __init__(self, methodName: str = "runTest") -> None:
         super().__init__(methodName=methodName)
-        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
+        self.endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
 
     def test_deploy_detector_config_missing(self) -> None:
         body: Dict[str, str] = {}
@@ -212,7 +213,7 @@ class TestDetect(unittest.TestCase):
 class TestDetectorInference(unittest.TestCase):
     def __init__(self, methodName: str = "runTest"):
         super().__init__(methodName=methodName)
-        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
+        self.endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
         # here we assume that deploy has been tested and works
         # so we can generate a fixed deploy id for testing
         body = {

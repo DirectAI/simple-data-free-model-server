@@ -5,6 +5,7 @@ import numpy as np
 from typing import Dict, Any
 
 FASTAPI_HOST = "host.docker.internal"
+FASTAPI_PORT = 8000
 
 
 def compute_kl_divergence_based_classification_loss(
@@ -29,7 +30,7 @@ def compute_kl_divergence_based_classification_loss(
 class TestClassifyDeploy(unittest.TestCase):
     def __init__(self, methodName: str = "runTest"):
         super().__init__(methodName=methodName)
-        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
+        self.endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
 
     def test_deploy_classifier_config_missing(self) -> None:
         body: dict = {}
@@ -121,7 +122,7 @@ class TestClassifyDeploy(unittest.TestCase):
 class TestClassifyInference(unittest.TestCase):
     def __init__(self, methodName: str = "runTest"):
         super().__init__(methodName=methodName)
-        self.endpoint = f"http://{FASTAPI_HOST}:8000/"
+        self.endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
         # here we assume that deploy has been tested and works
         # so we can generate a fixed deploy id for testing
         body = {
