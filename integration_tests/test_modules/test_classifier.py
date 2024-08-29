@@ -5,7 +5,7 @@ import numpy as np
 from typing import Dict, Any
 
 FASTAPI_HOST = "host.docker.internal"
-FASTAPI_PORT = 8000
+FASTAPI_PORT = 8001
 
 
 def compute_kl_divergence_based_classification_loss(

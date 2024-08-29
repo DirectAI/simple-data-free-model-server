@@ -11,7 +11,8 @@ from utils import (
     update_include_example,
     update_exclude_example,
     change_example_count,
-    deploy_and_infer,
+    classify_deploy_and_infer,
+    detect_deploy_and_infer,
     update_class_detection_threshold,
     update_models_state,
     update_nms_threshold,
@@ -293,12 +294,13 @@ with gr.Blocks(css=css) as demo:
                             outputs=[models_state, change_this_bool_to_force_reload],
                         )
 
-                    with gr.Group("Model Export"):
-                        with gr.Accordion("Export JSON", open=False):
-                            model_json_textbox = gr.JSON(
-                                label="Model JSON",
-                                value=models_state_val.display_dict(),
-                            )
+                    # with gr.Group("Model Export"):
+                    # with gr.Accordion("Export JSON", open=False):
+                    model_json_textbox = gr.JSON(
+                        # label="Model JSON",
+                        value=models_state_val.display_dict(),
+                        container=True,
+                    )
 
         with gr.Column():
             img_to_display = gr.Image()
@@ -317,13 +319,21 @@ with gr.Blocks(css=css) as demo:
                 proxy_bool: bool,
             ) -> None:
                 if img_to_display is not None:
-                    if models_state_val.current_model_type == "Detector":
-                        gr.Info("Detection Inference not yet supported.")
-                    else:
-                        inference_results = deploy_and_infer(
+                    if models_state_val.current_model_type == ModelType.DETECTOR:
+                        inference_results = detect_deploy_and_infer(
+                            img_to_display, models_state_val
+                        )
+                        print(inference_results)
+                    elif models_state_val.current_model_type == ModelType.CLASSIFIER:
+                        inference_results = classify_deploy_and_infer(
                             img_to_display, models_state_val
                         )
                         _ = gr.Label(inference_results)
+                    else:
+                        gr.Info(
+                            "No valid model config. Please select Detector or Classifier from the Dropdown.",
+                            duration=5,
+                        )
 
 
 demo.launch(server_name="0.0.0.0")

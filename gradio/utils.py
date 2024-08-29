@@ -14,6 +14,8 @@ from modeling import (
     DualModelInterface,
     ModelType,
     deploy_classifier,
+    deploy_detector,
+    get_detector_results,
     get_classifier_results,
     append_flipped_bool_decorator,
 )
@@ -117,7 +119,7 @@ def change_example_count(
     return models_state_val, class_idx, True
 
 
-def deploy_and_infer(
+def classify_deploy_and_infer(
     to_display: Union[Image.Image, np.ndarray], models_state_val: DualModelInterface
 ) -> dict:
     if to_display is None:
@@ -143,6 +145,35 @@ def deploy_and_infer(
     except Exception as e:
         gr.Info(
             "Generic Exception** in Model Deploy or Classification Response. Please try again.",
+            duration=2,
+        )
+        return {}
+
+
+def detect_deploy_and_infer(
+    to_display: Union[Image.Image, np.ndarray], models_state_val: DualModelInterface
+) -> dict:
+    if to_display is None:
+        return {}
+    try:
+        deployed_id = deploy_detector(models_state_val.detector_state.dict())
+        detection_results = get_detector_results(to_display, deployed_id)
+        return detection_results
+    except json.decoder.JSONDecodeError as e:
+        gr.Info("JSON Decode Error in Model Deploy or Detection Response", duration=2)
+        return {}
+    except requests.exceptions.ConnectionError as ce:
+        gr.Info(
+            "Request Connection Error in Model Deploy or Detection Response",
+            duration=2,
+        )
+        return {}
+    except ValueError as ve:
+        gr.Info(str(ve), duration=2)
+        return {}
+    except Exception as e:
+        gr.Info(
+            "Generic Exception** in Model Deploy or Detection Response. Please try again.",
             duration=2,
         )
         return {}

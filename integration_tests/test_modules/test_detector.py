@@ -7,7 +7,7 @@ from typing import Dict, List, Union, Any
 from scipy.optimize import linear_sum_assignment  # type: ignore[import-untyped]
 
 FASTAPI_HOST = "host.docker.internal"
-FASTAPI_PORT = 8000
+FASTAPI_PORT = 8001
 
 
 # copying over from directai_fastapi/pydantic_models.py
