@@ -181,13 +181,27 @@ class DualModelInterface:
         class_of_interest = self._get_class_of_interest(idx)
         return class_of_interest.examples_to_exclude
 
-    def dict(self) -> dict:
+    def full_model_dict(self) -> dict:
         if self.current_model_type == ModelType.DETECTOR:
             return self.detector_state.dict()
         elif self.current_model_type == ModelType.CLASSIFIER:
             return self.classifier_state.dict()
         else:
             raise ValueError("Model type is undefined. Can't obtain model dict.")
+
+    def display_dict(self) -> dict:
+        display_dict = self.full_model_dict()
+        if self.current_model_type == ModelType.CLASSIFIER:
+            keys_to_delete = ["deployed_id", "augment_examples"]
+        elif self.current_model_type == ModelType.DETECTOR:
+            keys_to_delete = ["class_agnostic_nms", "deployed_id", "augment_examples"]
+        else:
+            raise ValueError("Model type is undefined. Can't obtain visible dict.")
+
+        for key in keys_to_delete:
+            if key in display_dict:
+                del display_dict[key]
+        return display_dict
 
 
 def deploy_classifier(classifier_config: dict) -> str:

@@ -17,7 +17,7 @@ from utils import (
     update_nms_threshold,
 )
 
-from modeling import DualModelInterface
+from modeling import DualModelInterface, ModelType
 
 from typing import Union
 
@@ -246,7 +246,10 @@ with gr.Blocks(css=css) as demo:
                                                 change_this_bool_to_force_reload,
                                             ],
                                         )
-                                if models_state_val.current_model_type == "Detector":
+                                if (
+                                    models_state_val.current_model_type
+                                    == ModelType.DETECTOR
+                                ):
                                     class_threshold = gr.Slider(
                                         minimum=0,
                                         maximum=1.0,
@@ -272,7 +275,7 @@ with gr.Blocks(css=css) as demo:
                                         ],
                                     )
 
-                    if models_state_val.current_model_type == "Detector":
+                    if models_state_val.current_model_type == ModelType.DETECTOR:
                         nms_threshold = gr.Slider(
                             minimum=0,
                             maximum=1.0,
@@ -293,7 +296,8 @@ with gr.Blocks(css=css) as demo:
                     with gr.Group("Model Export"):
                         with gr.Accordion("Export JSON", open=False):
                             model_json_textbox = gr.JSON(
-                                label="Model JSON", value=models_state_val.dict()
+                                label="Model JSON",
+                                value=models_state_val.display_dict(),
                             )
 
         with gr.Column():
