@@ -19,8 +19,8 @@ class ZeroShotImageClassifierWithFeedback(nn.Module):
         self,
         base_model_name: str = "ViT-H-14-quickgelu",
         dataset_name: str = "dfn5b",
-        max_text_batch_size: int = 256,
-        max_image_batch_size: int = 256,
+        max_text_batch_size: int = 512,
+        max_image_batch_size: int = 512,
         device: torch.device | str = "cuda",
         lru_cache_size: int = 4096,  # set to 0 to disable caching
         jit: bool = True,

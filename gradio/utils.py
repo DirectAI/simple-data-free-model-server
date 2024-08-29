@@ -20,6 +20,8 @@ from modeling import (
     append_flipped_bool_decorator,
 )
 
+from illustrating import display_bounding_boxes
+
 
 @append_flipped_bool_decorator
 def upload_file(
@@ -181,6 +183,32 @@ def detect_deploy_and_infer(
             duration=2,
         )
         return {}
+
+
+def dual_model_infer(
+    pil_image: Image.Image,
+    models_state_val: DualModelInterface,
+) -> Image.Image:
+    if models_state_val.current_model_type == ModelType.DETECTOR:
+        inference_results = detect_deploy_and_infer(
+            to_display=pil_image, models_state_val=models_state_val
+        )
+        illustrated_image = display_bounding_boxes(
+            pil_image=pil_image,
+            dets=inference_results[0],
+            threshold=0.1,
+        )
+        return illustrated_image
+    elif models_state_val.current_model_type == ModelType.CLASSIFIER:
+        inference_results = classify_deploy_and_infer(pil_image, models_state_val)
+        output_label = gr.Label(inference_results)
+        return pil_image
+    else:
+        gr.Info(
+            "No valid model config. Please select Detector or Classifier from the Dropdown.",
+            duration=5,
+        )
+        return pil_image
 
 
 @append_flipped_bool_decorator

@@ -18,9 +18,8 @@ from utils import (
     update_class_detection_threshold,
     update_models_state,
     update_nms_threshold,
+    dual_model_infer,
 )
-
-from illustrating import display_bounding_boxes
 
 from modeling import DualModelInterface, ModelType
 
@@ -332,29 +331,9 @@ with gr.Blocks(css=css) as demo:
                         pil_image = Image.open(gradio_img)
                     print(type(pil_image))
                     pil_image.save("temp.jpg", format="JPEG")
-                    if models_state_val.current_model_type == ModelType.DETECTOR:
-                        inference_results = detect_deploy_and_infer(
-                            to_display=pil_image, models_state_val=models_state_val
-                        )
-                        print(inference_results)
-                        illustrated_image = display_bounding_boxes(
-                            pil_image=pil_image,
-                            dets=inference_results[0],
-                            threshold=0.1,
-                        )
-                        return illustrated_image
-                    elif models_state_val.current_model_type == ModelType.CLASSIFIER:
-                        inference_results = classify_deploy_and_infer(
-                            img_to_display.value, models_state_val
-                        )
-                        output_label = gr.Label(inference_results)
-                        return pil_image
-                    else:
-                        gr.Info(
-                            "No valid model config. Please select Detector or Classifier from the Dropdown.",
-                            duration=5,
-                        )
-                        return pil_image
+                    return dual_model_infer(
+                        pil_image=pil_image, models_state_val=models_state_val
+                    )
 
                 # if os.path.exists("temp.jpg"):
                 #     pil_image = Image.open("temp.jpg")
