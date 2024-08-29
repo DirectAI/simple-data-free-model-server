@@ -33,7 +33,6 @@ with gr.Blocks(css=css) as demo:
     change_this_bool_to_force_reload = gr.State(False)
     current_class_idx = gr.State(0)
     current_class_accordion_open = gr.State(False)
-    current_json_accordion_open = gr.State(False)
 
     with gr.Row():
         with gr.Column():
