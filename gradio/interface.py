@@ -29,7 +29,8 @@ with gr.Blocks(css=css) as demo:
     models_state = gr.State(DualModelInterface())
     # TLDR: Gradio State isn't properly managing complex state variables so we track model changes by pairing with a boolean
     # See message in Gradio discord: https://discord.com/channels/879548962464493619/1278443437175345272/1278443437175345272
-    models_state_proxy = gr.State(False)
+    # when gradio releases a fix we can remove all mentions of `change_this_bool_to_force_reload` and maintain existing functionality
+    change_this_bool_to_force_reload = gr.State(False)
     current_class_idx = gr.State(0)
     current_accordion_open = gr.State(False)
 
@@ -40,8 +41,8 @@ with gr.Blocks(css=css) as demo:
             )
             model_dropdown.change(
                 update_models_state,
-                inputs=[model_dropdown, models_state, models_state_proxy],
-                outputs=[models_state, models_state_proxy],
+                inputs=[model_dropdown, models_state, change_this_bool_to_force_reload],
+                outputs=[models_state, change_this_bool_to_force_reload],
             )
 
             @gr.render(
@@ -49,16 +50,16 @@ with gr.Blocks(css=css) as demo:
                     models_state,
                     current_class_idx,
                     current_accordion_open,
-                    models_state_proxy,
+                    change_this_bool_to_force_reload,
                 ],
             )
             def render_count(
                 models_state_val: DualModelInterface,
                 class_idx: int,
                 is_accordion_open: bool,
-                models_state_proxy_val: bool,
+                proxy_bool: bool,
             ) -> None:
-                if models_state_val.current_model_type != "":
+                if models_state_val.current_model_type is not None:
                     with gr.Group("Model Definition"):
                         json_upload_button = gr.UploadButton(
                             "Import JSON",
@@ -71,22 +72,32 @@ with gr.Blocks(css=css) as demo:
                             inputs=[
                                 json_upload_button,
                                 models_state,
-                                models_state_proxy,
+                                change_this_bool_to_force_reload,
                             ],
-                            outputs=[models_state, models_state_proxy],
+                            outputs=[models_state, change_this_bool_to_force_reload],
                         )
                         with gr.Row():
                             add_btn = gr.Button("Add Class")
                             sub_btn = gr.Button("Remove Class")
                             add_btn.click(
-                                lambda x, y: (x.add_class(), not y),
-                                inputs=[models_state, models_state_proxy],
-                                outputs=[models_state, models_state_proxy],
+                                lambda m_state, proxy_bool: m_state.add_class(
+                                    proxy_bool
+                                ),
+                                inputs=[models_state, change_this_bool_to_force_reload],
+                                outputs=[
+                                    models_state,
+                                    change_this_bool_to_force_reload,
+                                ],
                             )
                             sub_btn.click(
-                                lambda x, y: (x.remove_class(), not y),
-                                inputs=[models_state, models_state_proxy],
-                                outputs=[models_state, models_state_proxy],
+                                lambda m_state, proxy_bool: m_state.remove_class(
+                                    proxy_bool
+                                ),
+                                inputs=[models_state, change_this_bool_to_force_reload],
+                                outputs=[
+                                    models_state,
+                                    change_this_bool_to_force_reload,
+                                ],
                             )
                     count_val = len(models_state_val)
 
@@ -103,8 +114,15 @@ with gr.Blocks(css=css) as demo:
                             )
                             box.submit(
                                 fn=partial(update_class_label, i),
-                                inputs=[box, models_state, models_state_proxy],
-                                outputs=[models_state, models_state_proxy],
+                                inputs=[
+                                    box,
+                                    models_state,
+                                    change_this_bool_to_force_reload,
+                                ],
+                                outputs=[
+                                    models_state,
+                                    change_this_bool_to_force_reload,
+                                ],
                             )
                             with gr.Accordion(
                                 "advanced configuration",
@@ -121,12 +139,15 @@ with gr.Blocks(css=css) as demo:
                                                 "examples_to_include",
                                                 "increment",
                                             ),
-                                            [models_state, models_state_proxy],
+                                            [
+                                                models_state,
+                                                change_this_bool_to_force_reload,
+                                            ],
                                             [
                                                 models_state,
                                                 current_class_idx,
                                                 current_accordion_open,
-                                                models_state_proxy,
+                                                change_this_bool_to_force_reload,
                                             ],
                                         )
                                         rem_inc_example_btn = gr.Button(
@@ -139,12 +160,15 @@ with gr.Blocks(css=css) as demo:
                                                 "examples_to_include",
                                                 "decrement",
                                             ),
-                                            [models_state, models_state_proxy],
+                                            [
+                                                models_state,
+                                                change_this_bool_to_force_reload,
+                                            ],
                                             [
                                                 models_state,
                                                 current_class_idx,
                                                 current_accordion_open,
-                                                models_state_proxy,
+                                                change_this_bool_to_force_reload,
                                             ],
                                         )
                                     for j, inc_example in enumerate(to_include_list):
@@ -156,11 +180,11 @@ with gr.Blocks(css=css) as demo:
                                             inputs=[
                                                 curr_inc,
                                                 models_state,
-                                                models_state_proxy,
+                                                change_this_bool_to_force_reload,
                                             ],
                                             outputs=[
                                                 models_state,
-                                                models_state_proxy,
+                                                change_this_bool_to_force_reload,
                                             ],
                                         )
 
@@ -174,12 +198,15 @@ with gr.Blocks(css=css) as demo:
                                                 "examples_to_exclude",
                                                 "increment",
                                             ),
-                                            [models_state, models_state_proxy],
+                                            [
+                                                models_state,
+                                                change_this_bool_to_force_reload,
+                                            ],
                                             [
                                                 models_state,
                                                 current_class_idx,
                                                 current_accordion_open,
-                                                models_state_proxy,
+                                                change_this_bool_to_force_reload,
                                             ],
                                         )
                                         rem_exc_example_btn = gr.Button(
@@ -192,12 +219,15 @@ with gr.Blocks(css=css) as demo:
                                                 "examples_to_exclude",
                                                 "decrement",
                                             ),
-                                            [models_state, models_state_proxy],
+                                            [
+                                                models_state,
+                                                change_this_bool_to_force_reload,
+                                            ],
                                             [
                                                 models_state,
                                                 current_class_idx,
                                                 current_accordion_open,
-                                                models_state_proxy,
+                                                change_this_bool_to_force_reload,
                                             ],
                                         )
                                     for j, exc_example in enumerate(to_exclude_list):
@@ -209,9 +239,12 @@ with gr.Blocks(css=css) as demo:
                                             inputs=[
                                                 curr_exc,
                                                 models_state,
-                                                models_state_proxy,
+                                                change_this_bool_to_force_reload,
                                             ],
-                                            outputs=[models_state, models_state_proxy],
+                                            outputs=[
+                                                models_state,
+                                                change_this_bool_to_force_reload,
+                                            ],
                                         )
                                 if models_state_val.current_model_type == "Detector":
                                     class_threshold = gr.Slider(
@@ -229,13 +262,13 @@ with gr.Blocks(css=css) as demo:
                                         inputs=[
                                             models_state,
                                             class_threshold,
-                                            models_state_proxy,
+                                            change_this_bool_to_force_reload,
                                         ],
                                         outputs=[
                                             models_state,
-                                            models_state_proxy,
                                             current_class_idx,
                                             current_accordion_open,
+                                            change_this_bool_to_force_reload,
                                         ],
                                     )
 
@@ -249,35 +282,35 @@ with gr.Blocks(css=css) as demo:
                         )
                         nms_threshold.release(
                             update_nms_threshold,
-                            inputs=[models_state, nms_threshold, models_state_proxy],
-                            outputs=[models_state, models_state_proxy],
+                            inputs=[
+                                models_state,
+                                nms_threshold,
+                                change_this_bool_to_force_reload,
+                            ],
+                            outputs=[models_state, change_this_bool_to_force_reload],
                         )
 
                     with gr.Group("Model Export"):
-                        model_builder_button = gr.Button("Export JSON")
-                        model_json_textbox = gr.JSON(
-                            label="Model JSON", value=models_state_val.dict()
-                        )
-
-                        model_builder_button.click(
-                            lambda x: x.dict(), models_state, model_json_textbox
-                        )
+                        with gr.Accordion("Export JSON", open=False):
+                            model_json_textbox = gr.JSON(
+                                label="Model JSON", value=models_state_val.dict()
+                            )
 
         with gr.Column():
             img_to_display = gr.Image()
 
             @gr.render(
-                inputs=[models_state, img_to_display, models_state_proxy],
+                inputs=[models_state, img_to_display, change_this_bool_to_force_reload],
                 triggers=[
                     models_state.change,
                     img_to_display.input,
-                    models_state_proxy.change,
+                    change_this_bool_to_force_reload.change,
                 ],
             )
             def render_results(
                 models_state_val: DualModelInterface,
                 img_to_display: Union[Image.Image, np.ndarray],
-                models_state_proxy_val: bool,
+                proxy_bool: bool,
             ) -> None:
                 if img_to_display is not None:
                     if models_state_val.current_model_type == "Detector":

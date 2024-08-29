@@ -12,206 +12,109 @@ from modeling import (
     ClassifierDeploy,
     DetectorDeploy,
     DualModelInterface,
+    ModelType,
     deploy_classifier,
     get_classifier_results,
+    append_flipped_bool_decorator,
 )
 
 
+@append_flipped_bool_decorator
 def upload_file(
-    file_bytes: bytes, models_state_val: DualModelInterface, proxy_bool: bool
-) -> Tuple[DualModelInterface, bool]:
+    file_bytes: bytes, models_state_val: DualModelInterface
+) -> DualModelInterface:
     try:
         json_data = json.loads(file_bytes.decode("utf-8"))
-        if models_state_val.current_model_type == "Classifier":
+        if models_state_val.current_model_type == ModelType.CLASSIFIER:
             models_state_val.classifier_state = ClassifierDeploy.parse_obj(json_data)
-        elif models_state_val.current_model_type == "Detector":
+        elif models_state_val.current_model_type == ModelType.DETECTOR:
             models_state_val.detector_state = DetectorDeploy.parse_obj(json_data)
     except Exception:
         gr.Info("Error Parsing JSON", duration=2)
 
-    return models_state_val, not proxy_bool
+    return models_state_val
 
 
+@append_flipped_bool_decorator
 def update_class_detection_threshold(
-    class_idx: int,
-    models_state_val: DualModelInterface,
-    threshold_val: float,
-    proxy_bool: bool,
-) -> Tuple[DualModelInterface, bool, int, bool]:
+    class_idx: int, models_state_val: DualModelInterface, threshold_val: float
+) -> Tuple[DualModelInterface, int, bool]:
     models_state_val.detector_state.detector_configs[class_idx].detection_threshold = (
         threshold_val
     )
-    return models_state_val, not proxy_bool, class_idx, True
+    return models_state_val, class_idx, True
 
 
+@append_flipped_bool_decorator
 def update_nms_threshold(
-    models_state_val: DualModelInterface, nms_threshold_val: float, proxy_bool: bool
-) -> Tuple[DualModelInterface, bool]:
+    models_state_val: DualModelInterface, nms_threshold_val: float
+) -> DualModelInterface:
     models_state_val.detector_state.nms_threshold = nms_threshold_val
-    return models_state_val, not proxy_bool
+    return models_state_val
 
 
+@append_flipped_bool_decorator
 def update_class_label(
-    class_idx: int,
-    class_name: str,
-    models_state_val: DualModelInterface,
-    proxy_bool: bool,
-) -> Tuple[DualModelInterface, bool]:
-    if models_state_val.current_model_type == "Classifier":
-        models_state_val.classifier_state.classifier_configs[class_idx].name = (
-            class_name
-        )
-        if (
-            len(
-                models_state_val.classifier_state.classifier_configs[
-                    class_idx
-                ].examples_to_include
-            )
-            == 0
-        ):
-            models_state_val.classifier_state.classifier_configs[
-                class_idx
-            ].examples_to_include = [class_name]
+    class_idx: int, class_name: str, models_state_val: DualModelInterface
+) -> DualModelInterface:
+    current_configs = models_state_val.current_configs
+    current_configs[class_idx].name = class_name
+    if len(current_configs[class_idx].examples_to_include) == 0:
+        current_configs[class_idx].examples_to_include = [class_name]
 
-    elif models_state_val.current_model_type == "Detector":
-        models_state_val.detector_state.detector_configs[class_idx].name = class_name
-        if (
-            len(
-                models_state_val.detector_state.detector_configs[
-                    class_idx
-                ].examples_to_include
-            )
-            == 0
-        ):
-            models_state_val.detector_state.detector_configs[
-                class_idx
-            ].examples_to_include = [class_name]
-
-    return models_state_val, not proxy_bool
+    return models_state_val
 
 
+@append_flipped_bool_decorator
 def update_include_example(
     class_idx: int,
     include_idx: int,
     label_name: str,
     models_state_val: DualModelInterface,
-    proxy_bool: bool,
-) -> Tuple[DualModelInterface, bool]:
-    if models_state_val.current_model_type == "Classifier":
-        models_state_val.classifier_state.classifier_configs[
-            class_idx
-        ].examples_to_include[include_idx] = label_name
-    elif models_state_val.current_model_type == "Detector":
-        models_state_val.detector_state.detector_configs[class_idx].examples_to_include[
-            include_idx
-        ] = label_name
-    return models_state_val, not proxy_bool
+) -> DualModelInterface:
+    current_configs = models_state_val.current_configs
+    current_configs[class_idx].examples_to_include[include_idx] = label_name
+    return models_state_val
 
 
+@append_flipped_bool_decorator
 def update_exclude_example(
     class_idx: int,
     exclude_idx: int,
     label_name: str,
     models_state_val: DualModelInterface,
-    proxy_bool: bool,
-) -> Tuple[DualModelInterface, bool]:
-    if models_state_val.current_model_type == "Classifier":
-        models_state_val.classifier_state.classifier_configs[
-            class_idx
-        ].examples_to_exclude[exclude_idx] = label_name
-    elif models_state_val.current_model_type == "Detector":
-        models_state_val.detector_state.detector_configs[class_idx].examples_to_exclude[
-            exclude_idx
-        ] = label_name
-    return models_state_val, not proxy_bool
+) -> DualModelInterface:
+    current_configs = models_state_val.current_configs
+    current_configs[class_idx].examples_to_exclude[exclude_idx] = label_name
+    return models_state_val
 
 
+@append_flipped_bool_decorator
 def change_example_count(
     class_idx: int,
     type_of_example: str,
     change_key: str,
     models_state_val: DualModelInterface,
-    proxy_bool: bool,
-) -> Tuple[DualModelInterface, int, bool, bool]:
+) -> Tuple[DualModelInterface, int, bool]:
     # We expect `type_of_example` to be "to_include" or "to_exclude"
     # We expect `change_key` to be "increment" or "decrement"
-    if models_state_val.current_model_type == "Classifier":
-        if change_key == "increment":
-            if type_of_example == "examples_to_include":
-                attr_to_modify = getattr(
-                    models_state_val.classifier_state.classifier_configs[class_idx],
-                    type_of_example,
-                )
-                attr_to_modify.append(f"to include in class {class_idx}")
-                setattr(
-                    models_state_val.classifier_state.classifier_configs[class_idx],
-                    type_of_example,
-                    attr_to_modify,
-                )
+    current_configs = models_state_val.current_configs
 
-            elif type_of_example == "examples_to_exclude":
-                attr_to_modify = getattr(
-                    models_state_val.classifier_state.classifier_configs[class_idx],
-                    type_of_example,
-                )
-                attr_to_modify.append(f"to exclude in class {class_idx}")
-                setattr(
-                    models_state_val.classifier_state.classifier_configs[class_idx],
-                    type_of_example,
-                    attr_to_modify,
-                )
+    if change_key == "increment":
+        attr_to_modify = getattr(current_configs[class_idx], type_of_example)
+        attr_to_modify.append(
+            f"to include in class {class_idx}"
+            if type_of_example == "examples_to_include"
+            else f"to exclude in class {class_idx}"
+        )
+        setattr(current_configs[class_idx], type_of_example, attr_to_modify)
 
-        elif change_key == "decrement":
-            attr_to_modify = getattr(
-                models_state_val.classifier_state.classifier_configs[class_idx],
-                type_of_example,
-            )
-            attr_to_modify = attr_to_modify[:-1]
-            setattr(
-                models_state_val.classifier_state.classifier_configs[class_idx],
-                type_of_example,
-                attr_to_modify,
-            )
+    elif change_key == "decrement":
+        attr_to_modify = getattr(current_configs[class_idx], type_of_example)
+        attr_to_modify = attr_to_modify[:-1]
+        setattr(current_configs[class_idx], type_of_example, attr_to_modify)
 
-    elif models_state_val.current_model_type == "Detector":
-        if change_key == "increment":
-            if type_of_example == "examples_to_include":
-                attr_to_modify = getattr(
-                    models_state_val.detector_state.detector_configs[class_idx],
-                    type_of_example,
-                )
-                attr_to_modify.append(f"to include in class {class_idx}")
-                setattr(
-                    models_state_val.detector_state.detector_configs[class_idx],
-                    type_of_example,
-                    attr_to_modify,
-                )
-
-            elif type_of_example == "examples_to_exclude":
-                attr_to_modify = getattr(
-                    models_state_val.detector_state.detector_configs[class_idx],
-                    type_of_example,
-                )
-                attr_to_modify.append(f"to exclude in class {class_idx}")
-                setattr(
-                    models_state_val.detector_state.detector_configs[class_idx],
-                    type_of_example,
-                    attr_to_modify,
-                )
-
-        elif change_key == "decrement":
-            attr_to_modify = getattr(
-                models_state_val.detector_state.detector_configs[class_idx],
-                type_of_example,
-            )
-            attr_to_modify = attr_to_modify[:-1]
-            setattr(
-                models_state_val.detector_state.detector_configs[class_idx],
-                type_of_example,
-                attr_to_modify,
-            )
-
-    return models_state_val, class_idx, True, not proxy_bool
+    return models_state_val, class_idx, True
 
 
 def deploy_and_infer(
@@ -245,12 +148,13 @@ def deploy_and_infer(
         return {}
 
 
+@append_flipped_bool_decorator
 def update_models_state(
-    dropdown_val: str, models_state_val: DualModelInterface, proxy_bool: bool
-) -> Tuple[DualModelInterface, bool]:
+    dropdown_val: str, models_state_val: DualModelInterface
+) -> DualModelInterface:
     if dropdown_val == "Detector":
         models_state_val.overwrite_detector()
     elif dropdown_val == "Classifier":
         models_state_val.overwrite_classifier()
-    models_state_val.current_model_type = dropdown_val
-    return models_state_val, not proxy_bool
+    models_state_val.current_model_type = ModelType(dropdown_val)
+    return models_state_val

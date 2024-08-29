@@ -2,12 +2,30 @@ import io
 import requests
 from PIL import Image
 import numpy as np
-from typing import Union, List, Optional
+from enum import Enum
+from typing import Union, List, Optional, Any, Callable
 from pydantic import BaseModel
 
 FASTAPI_HOST = "host.docker.internal"
 FASTAPI_PORT = 8000
 endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
+
+
+# See notes on `change_this_bool_to_force_reload` in gradio/interface.py
+# when gradio pushes a fix we can remove all decorators and maintain functionality
+def append_flipped_bool_decorator(func: Callable) -> Callable:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if "proxy_bool" in kwargs:
+            proxy_bool = kwargs.pop("proxy_bool")
+        else:
+            proxy_bool = args[-1]
+            args = args[:-1]
+        result = func(*args, **kwargs)
+        if isinstance(result, tuple):
+            return result + (not proxy_bool,)
+        return result, not proxy_bool
+
+    return wrapper
 
 
 class SingleClassifierClass(BaseModel):
@@ -71,11 +89,27 @@ class DetectorDeploy(BaseModel):
         self.detector_configs = self.detector_configs[:-1]
 
 
+class ModelType(Enum):
+    DETECTOR = "Detector"
+    CLASSIFIER = "Classifier"
+
+
 class DualModelInterface:
     def __init__(self) -> None:
-        self.current_model_type = ""
+        self.current_model_type: Optional[ModelType] = None
         self.classifier_state = ClassifierDeploy(classifier_configs=[])
         self.detector_state = DetectorDeploy(detector_configs=[])
+
+    @property
+    def current_configs(
+        self,
+    ) -> Union[List[SingleClassifierClass], List[SingleDetectorClass]]:
+        if self.current_model_type == ModelType.DETECTOR:
+            return self.detector_state.detector_configs
+        elif self.current_model_type == ModelType.CLASSIFIER:
+            return self.classifier_state.classifier_configs
+        else:
+            raise ValueError("Model type is undefined. Can't obtain current configs.")
 
     def overwrite_classifier(self) -> None:
         self.classifier_state.classifier_configs = [
@@ -98,42 +132,42 @@ class DualModelInterface:
         ]
 
     def set_current_model_type(self, current_model_type: str) -> None:
-        self.current_model_type = current_model_type
+        self.current_model_type = ModelType(current_model_type)
 
+    @append_flipped_bool_decorator
     def add_class(self, name: str = "") -> "DualModelInterface":
-        if self.current_model_type == "Detector":
+        if self.current_model_type == ModelType.DETECTOR:
             self.detector_state.add_class(name=name)
-        elif self.current_model_type == "Classifier":
+        elif self.current_model_type == ModelType.CLASSIFIER:
             self.classifier_state.add_class(name=name)
         return self
 
+    @append_flipped_bool_decorator
     def remove_class(self) -> "DualModelInterface":
-        if self.current_model_type == "Detector":
+        if self.current_model_type == ModelType.DETECTOR:
             self.detector_state.remove_class()
-        elif self.current_model_type == "Classifier":
+        elif self.current_model_type == ModelType.CLASSIFIER:
             self.classifier_state.remove_class()
         return self
 
     def __len__(self) -> int:
-        if self.current_model_type == "Detector":
+        if self.current_model_type == ModelType.DETECTOR:
             return len(self.detector_state.detector_configs)
-        elif self.current_model_type == "Classifier":
+        elif self.current_model_type == ModelType.CLASSIFIER:
             return len(self.classifier_state.classifier_configs)
-        return 0
+        else:
+            # model type is unassigned at __init__
+            return 0
 
     def _get_class_of_interest(
         self, idx: int
     ) -> Union[SingleClassifierClass, SingleDetectorClass]:
-        assert self.current_model_type in [
-            "Detector",
-            "Classifier",
-        ], "Invalid model type"
-        if self.current_model_type == "Detector":
+        if self.current_model_type == ModelType.DETECTOR:
             return self.detector_state.detector_configs[idx]
-        else:
-            # i.e. self.current_model_type == "Classifier"
-            # added else to provide coverage for mypy
+        elif self.current_model_type == ModelType.CLASSIFIER:
             return self.classifier_state.classifier_configs[idx]
+        else:
+            raise ValueError("Model type is undefined. Can't obtain class of interest.")
 
     def get_class_label(self, idx: int) -> str:
         class_of_interest = self._get_class_of_interest(idx)
@@ -148,12 +182,12 @@ class DualModelInterface:
         return class_of_interest.examples_to_exclude
 
     def dict(self) -> dict:
-        if self.current_model_type == "Detector":
+        if self.current_model_type == ModelType.DETECTOR:
             return self.detector_state.dict()
-        else:
-            # i.e. self.current_model_type == "Classifier"
-            # added else to provide coverage for mypy
+        elif self.current_model_type == ModelType.CLASSIFIER:
             return self.classifier_state.dict()
+        else:
+            raise ValueError("Model type is undefined. Can't obtain model dict.")
 
 
 def deploy_classifier(classifier_config: dict) -> str:
