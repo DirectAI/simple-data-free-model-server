@@ -32,7 +32,8 @@ with gr.Blocks(css=css) as demo:
     # when gradio releases a fix we can remove all mentions of `change_this_bool_to_force_reload` and maintain existing functionality
     change_this_bool_to_force_reload = gr.State(False)
     current_class_idx = gr.State(0)
-    current_accordion_open = gr.State(False)
+    current_class_accordion_open = gr.State(False)
+    current_json_accordion_open = gr.State(False)
 
     with gr.Row():
         with gr.Column():
@@ -49,14 +50,14 @@ with gr.Blocks(css=css) as demo:
                 inputs=[
                     models_state,
                     current_class_idx,
-                    current_accordion_open,
+                    current_class_accordion_open,
                     change_this_bool_to_force_reload,
                 ],
             )
             def render_count(
                 models_state_val: DualModelInterface,
                 class_idx: int,
-                is_accordion_open: bool,
+                is_class_accordion_open: bool,
                 proxy_bool: bool,
             ) -> None:
                 if models_state_val.current_model_type is not None:
@@ -127,7 +128,7 @@ with gr.Blocks(css=css) as demo:
                             with gr.Accordion(
                                 "advanced configuration",
                                 elem_id="configuration_accordion",
-                                open=i == class_idx and is_accordion_open,
+                                open=i == class_idx and is_class_accordion_open,
                             ):
                                 with gr.Accordion("examples to include", open=True):
                                     with gr.Row():
@@ -146,7 +147,7 @@ with gr.Blocks(css=css) as demo:
                                             [
                                                 models_state,
                                                 current_class_idx,
-                                                current_accordion_open,
+                                                current_class_accordion_open,
                                                 change_this_bool_to_force_reload,
                                             ],
                                         )
@@ -167,7 +168,7 @@ with gr.Blocks(css=css) as demo:
                                             [
                                                 models_state,
                                                 current_class_idx,
-                                                current_accordion_open,
+                                                current_class_accordion_open,
                                                 change_this_bool_to_force_reload,
                                             ],
                                         )
@@ -205,7 +206,7 @@ with gr.Blocks(css=css) as demo:
                                             [
                                                 models_state,
                                                 current_class_idx,
-                                                current_accordion_open,
+                                                current_class_accordion_open,
                                                 change_this_bool_to_force_reload,
                                             ],
                                         )
@@ -226,7 +227,7 @@ with gr.Blocks(css=css) as demo:
                                             [
                                                 models_state,
                                                 current_class_idx,
-                                                current_accordion_open,
+                                                current_class_accordion_open,
                                                 change_this_bool_to_force_reload,
                                             ],
                                         )
@@ -270,7 +271,7 @@ with gr.Blocks(css=css) as demo:
                                         outputs=[
                                             models_state,
                                             current_class_idx,
-                                            current_accordion_open,
+                                            current_class_accordion_open,
                                             change_this_bool_to_force_reload,
                                         ],
                                     )
@@ -293,12 +294,10 @@ with gr.Blocks(css=css) as demo:
                             outputs=[models_state, change_this_bool_to_force_reload],
                         )
 
-                    with gr.Group("Model Export"):
-                        with gr.Accordion("Export JSON", open=False):
-                            model_json_textbox = gr.JSON(
-                                label="Model JSON",
-                                value=models_state_val.display_dict(),
-                            )
+                    with gr.Accordion("Export JSON", open=True):
+                        model_json_textbox = gr.JSON(
+                            value=models_state_val.display_dict(),
+                        )
 
         with gr.Column():
             img_to_display = gr.Image()

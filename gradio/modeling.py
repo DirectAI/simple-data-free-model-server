@@ -111,6 +111,15 @@ class DualModelInterface:
         else:
             raise ValueError("Model type is undefined. Can't obtain current configs.")
 
+    @property
+    def current_state(self) -> Union[ClassifierDeploy, DetectorDeploy]:
+        if self.current_model_type == ModelType.DETECTOR:
+            return self.detector_state
+        elif self.current_model_type == ModelType.CLASSIFIER:
+            return self.classifier_state
+        else:
+            raise ValueError("Model type is undefined. Can't obtain current state.")
+
     def overwrite_classifier(self) -> None:
         self.classifier_state.classifier_configs = [
             SingleClassifierClass(
@@ -136,18 +145,12 @@ class DualModelInterface:
 
     @append_flipped_bool_decorator
     def add_class(self, name: str = "") -> "DualModelInterface":
-        if self.current_model_type == ModelType.DETECTOR:
-            self.detector_state.add_class(name=name)
-        elif self.current_model_type == ModelType.CLASSIFIER:
-            self.classifier_state.add_class(name=name)
+        self.current_state.add_class(name=name)
         return self
 
     @append_flipped_bool_decorator
     def remove_class(self) -> "DualModelInterface":
-        if self.current_model_type == ModelType.DETECTOR:
-            self.detector_state.remove_class()
-        elif self.current_model_type == ModelType.CLASSIFIER:
-            self.classifier_state.remove_class()
+        self.current_state.remove_class()
         return self
 
     def __len__(self) -> int:
@@ -162,10 +165,11 @@ class DualModelInterface:
     def _get_class_of_interest(
         self, idx: int
     ) -> Union[SingleClassifierClass, SingleDetectorClass]:
-        if self.current_model_type == ModelType.DETECTOR:
-            return self.detector_state.detector_configs[idx]
-        elif self.current_model_type == ModelType.CLASSIFIER:
-            return self.classifier_state.classifier_configs[idx]
+        if (
+            self.current_model_type == ModelType.DETECTOR
+            or self.current_model_type == ModelType.CLASSIFIER
+        ):
+            return self.current_configs[idx]
         else:
             raise ValueError("Model type is undefined. Can't obtain class of interest.")
 
@@ -182,10 +186,11 @@ class DualModelInterface:
         return class_of_interest.examples_to_exclude
 
     def full_model_dict(self) -> dict:
-        if self.current_model_type == ModelType.DETECTOR:
-            return self.detector_state.dict()
-        elif self.current_model_type == ModelType.CLASSIFIER:
-            return self.classifier_state.dict()
+        if (
+            self.current_model_type == ModelType.DETECTOR
+            or self.current_model_type == ModelType.CLASSIFIER
+        ):
+            return self.current_state.dict()
         else:
             raise ValueError("Model type is undefined. Can't obtain model dict.")
 
