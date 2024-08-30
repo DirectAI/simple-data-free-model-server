@@ -1,6 +1,5 @@
 import json
 import os
-import io
 import gradio as gr  # type: ignore[import-untyped]
 from functools import partial
 from PIL import Image
@@ -23,7 +22,7 @@ from utils import (
 
 from modeling import DualModelInterface, ModelType
 
-from typing import Union
+from typing import Union, Tuple
 
 css = """
 #configuration_accordion {background-color: #0B0F19}
@@ -303,94 +302,27 @@ with gr.Blocks(css=css) as demo:
                         )
 
         with gr.Column():
+            raw_img_to_hide = gr.Image(visible=False)
+            img_to_display = gr.Image()
+            classification_label = gr.Label(visible=False)
 
-            @gr.render(
-                inputs=[models_state, change_this_bool_to_force_reload],
-                triggers=[
-                    models_state.change,
-                    change_this_bool_to_force_reload.change,
-                    # TODO: add demo launch as a trigger
-                ],
+            # if we change the image input, save it to the ~hidden~ image component for later use
+            img_to_display.input(
+                lambda x: gr.Image(x, visible=False),
+                inputs=[img_to_display],
+                outputs=[raw_img_to_hide],
+            ).then(
+                dual_model_infer,
+                inputs=[raw_img_to_hide, models_state],
+                outputs=[img_to_display, classification_label],
             )
-            def render_image(
-                models_state_val: DualModelInterface,
-                proxy_bool: bool,
-            ) -> None:
-                def del_image() -> None:
-                    if os.path.exists("temp.jpg"):
-                        os.remove("temp.jpg")
 
-                def save_image(
-                    gradio_img: Union[Image.Image, np.ndarray, str]
-                ) -> Image.Image:
-                    print(type(gradio_img))
-                    if isinstance(gradio_img, np.ndarray):
-                        img_byte_arr = io.BytesIO()
-                        pil_image = Image.fromarray(gradio_img)
-                    elif isinstance(gradio_img, str):
-                        pil_image = Image.open(gradio_img)
-                    print(type(pil_image))
-                    pil_image.save("temp.jpg", format="JPEG")
-                    return dual_model_infer(
-                        pil_image=pil_image, models_state_val=models_state_val
-                    )
-
-                # if os.path.exists("temp.jpg"):
-                #     pil_image = Image.open("temp.jpg")
-                #     if models_state_val.current_model_type == ModelType.DETECTOR:
-                #         inference_results = detect_deploy_and_infer(
-                #             to_display = pil_image,
-                #             models_state_val = models_state_val
-                #         )
-                #         print(inference_results)
-                #         illustrated_image = display_bounding_boxes(
-                #             gradio_img = pil_image,
-                #             dets= inference_results[0],
-                #             threshold= 0.1,
-                #         )
-                #         img_to_display = gr.Image(value=illustrated_image)
-                #     # render the image at the illustrated fp
-                #     else:
-                #         img_to_display = gr.Image(value=pil_image)
-                # else:
-                img_to_display = gr.Image()
-
-                img_to_display.clear(del_image)
-                img_to_display.input(
-                    save_image, inputs=img_to_display, outputs=img_to_display
-                )
-
-            # @gr.render(
-            #     inputs=[models_state, change_this_bool_to_force_reload],
-            #     triggers=[
-            #         models_state.change,
-            #         change_this_bool_to_force_reload.change,
-            #     ],
-            # )
-            # def render_results(
-            #     models_state_val: DualModelInterface,
-            #     proxy_bool: bool,
-            # ) -> None:
-            #     img_to_display = gr.Image(key="img_to_display")
-            #     # img_to_display.input(
-
-            #     # )
-            #     if img_to_display.value is not None:
-            #         if models_state_val.current_model_type == ModelType.DETECTOR:
-            #             inference_results = detect_deploy_and_infer(
-            #                 img_to_display.value, models_state_val
-            #             )
-            #             print(inference_results)
-            # elif models_state_val.current_model_type == ModelType.CLASSIFIER:
-            #     inference_results = classify_deploy_and_infer(
-            #         img_to_display.value, models_state_val
-            #     )
-            #     _ = gr.Label(inference_results)
-            # else:
-            #     gr.Info(
-            #         "No valid model config. Please select Detector or Classifier from the Dropdown.",
-            #         duration=5,
-            #     )
-
+            # if we update the model, run inference again (on the raw image)
+            # note that once gradio fixes its image issue, we should be monitoring the model state, not the proxy boolean
+            change_this_bool_to_force_reload.change(
+                dual_model_infer,
+                inputs=[raw_img_to_hide, models_state],
+                outputs=[img_to_display, classification_label],
+            )
 
 demo.launch(server_name="0.0.0.0")

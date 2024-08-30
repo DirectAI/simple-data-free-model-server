@@ -1,4 +1,5 @@
 import json
+import io
 import requests
 import gradio as gr  # type: ignore[import-untyped]
 
@@ -142,7 +143,7 @@ def classify_deploy_and_infer(
         )
         return {}
     except ValueError as ve:
-        gr.Info(str(ve), duration=2)
+        gr.Info("Malformatted model. Please update the configuration.", duration=2)
         return {}
     except Exception as e:
         gr.Info(
@@ -154,61 +155,70 @@ def classify_deploy_and_infer(
 
 def detect_deploy_and_infer(
     to_display: Image.Image, models_state_val: DualModelInterface
-) -> dict:
-    print("Type of to_display in detect_deploy_and_infer:", type(to_display))
+) -> list:
     if to_display is None:
-        return {}
+        return [[]]
     try:
-        print("about to deploy detector")
         deployed_id = deploy_detector(models_state_val.detector_state.dict())
-        print("Detector deployed id:", deployed_id)
         detection_results = get_detector_results(to_display, deployed_id)
         return detection_results
     except json.decoder.JSONDecodeError as e:
         gr.Info("JSON Decode Error in Model Deploy or Detection Response", duration=2)
-        return {}
+        return [[]]
     except requests.exceptions.ConnectionError as ce:
-        print(ce)
         gr.Info(
             "Request Connection Error in Model Deploy or Detection Response",
             duration=2,
         )
-        return {}
+        return [[]]
     except ValueError as ve:
-        gr.Info(str(ve), duration=2)
-        return {}
+        gr.Info("Malformatted model. Please update the configuration.", duration=2)
+        return [[]]
     except Exception as e:
         gr.Info(
             "Generic Exception** in Model Deploy or Detection Response. Please try again.",
             duration=2,
         )
-        return {}
+        return [[]]
 
 
 def dual_model_infer(
-    pil_image: Image.Image,
+    gradio_img: Union[Image.Image, np.ndarray, str],
     models_state_val: DualModelInterface,
-) -> Image.Image:
+) -> Tuple[Image.Image, gr.Label]:
+    # deal with image typing
+    if gradio_img is None:
+        return gradio_img, gr.Label(visible=False)
+    elif isinstance(gradio_img, np.ndarray):
+        img_byte_arr = io.BytesIO()
+        pil_image = Image.fromarray(gradio_img)
+    elif isinstance(gradio_img, str):
+        pil_image = Image.open(gradio_img)
+    else:
+        pil_image = gradio_img
+
+    # deal with inference
     if models_state_val.current_model_type == ModelType.DETECTOR:
-        inference_results = detect_deploy_and_infer(
+        detection_inference_results = detect_deploy_and_infer(
             to_display=pil_image, models_state_val=models_state_val
         )
         illustrated_image = display_bounding_boxes(
             pil_image=pil_image,
-            dets=inference_results[0],
-            threshold=0.1,
+            dets=detection_inference_results[0],
+            threshold=0,  # we already did threshold checks server-side
         )
-        return illustrated_image
+        return illustrated_image, gr.Label(visible=False)
     elif models_state_val.current_model_type == ModelType.CLASSIFIER:
-        inference_results = classify_deploy_and_infer(pil_image, models_state_val)
-        output_label = gr.Label(inference_results)
-        return pil_image
+        classification_inference_results = classify_deploy_and_infer(
+            pil_image, models_state_val
+        )
+        return pil_image, gr.Label(classification_inference_results, visible=True)
     else:
         gr.Info(
             "No valid model config. Please select Detector or Classifier from the Dropdown.",
             duration=5,
         )
-        return pil_image
+        return pil_image, gr.Label(visible=False)
 
 
 @append_flipped_bool_decorator
