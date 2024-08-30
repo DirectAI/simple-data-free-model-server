@@ -1,9 +1,9 @@
 version: '2.3'
 
 services:
-  integration_tests_ben:
+  integration_tests:
     build: integration_tests/
-    container_name: integration_tests_ben
+    container_name: integration_tests
     networks:
       - deploy_network
     volumes:
