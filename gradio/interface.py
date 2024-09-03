@@ -304,9 +304,13 @@ with gr.Blocks(css=css) as demo:
 
         with gr.Column():
             raw_img_to_hide = gr.Image(visible=False)
-            optional_img_url = gr.Textbox(label="[Optional]: Upload an Image via URL")
-            img_url_submit_button = gr.Button("Submit")
+            with gr.Accordion("Upload an Image via URL", open=False):
+                optional_img_url = gr.Textbox(label="", placeholder="your://url/here")
+                img_url_submit_button = gr.Button("Submit")
 
+            upload_option_markdown = gr.Markdown(
+                "<div style='text-align: center;'><b>OR</b></div>"
+            )
             img_to_display = gr.Image()
             classification_label = gr.Label(visible=False)
             img_url_submit_button.click(
