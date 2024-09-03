@@ -209,6 +209,45 @@ class TestDetect(unittest.TestCase):
         self.assertTrue("deployed_id" in response_json)
         self.assertEqual(response_json["message"], "New model deployed.")
 
+    def test_deploy_and_get_of_detector(self) -> None:
+        # Deploy the detector
+        body = {
+            "detector_configs": [
+                {
+                    "name": "bottle",
+                    "examples_to_include": ["bottle"],
+                    "examples_to_exclude": [],
+                    "detection_threshold": 0.1,
+                },
+                {
+                    "name": "can",
+                    "examples_to_include": ["can"],
+                    "examples_to_exclude": [],
+                    "detection_threshold": 0.2,
+                },
+            ],
+            "class_agnostic_nms": False,
+            "augment_examples": True,
+            "nms_threshold": 0.4,
+        }
+        deploy_response = requests.post(self.endpoint + "deploy_detector", json=body)
+        deploy_response_json = deploy_response.json()
+        self.assertTrue("deployed_id" in deploy_response_json)
+        self.assertEqual(deploy_response_json["message"], "New model deployed.")
+        deployed_id = deploy_response_json["deployed_id"]
+
+        # Validate that running a GET request on /model returns the same model config
+        model_response = requests.get(
+            self.endpoint + f"model?deployed_id={deployed_id}"
+        )
+        self.assertEqual(model_response.status_code, 200)
+        model_response_json = model_response.json()
+
+        expected_model_config = body
+        expected_model_config["deployed_id"] = deployed_id
+
+        self.assertEqual(model_response_json, expected_model_config)
+
 
 class TestDetectorInference(unittest.TestCase):
     def __init__(self, methodName: str = "runTest"):

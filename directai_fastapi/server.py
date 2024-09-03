@@ -214,3 +214,30 @@ async def run_detector(
     return [
         bboxes,
     ]
+
+
+@app.get(
+    "/model",
+    include_in_schema=True,
+    responses={
+        200: {"model": Union[DetectorDeploy, ClassifierDeploy]},
+        400: {"model": HTTPExceptionResponse},
+        422: {"model": HTTPExceptionResponse},
+        502: {"model": HTTPExceptionResponse},
+    },
+)
+async def get_model(
+    request: Request, deployed_id: str
+) -> Union[DetectorDeploy, ClassifierDeploy]:
+    logger.info(f"Got request for {deployed_id}.")
+    model_agnostic_config = await grab_config(deployed_id)
+    is_detector = "nms_threshold" in model_agnostic_config
+    if is_detector:
+        deployed_detector = DetectorDeploy.from_config_dict(model_agnostic_config)
+        deployed_detector.deployed_id = deployed_id
+        return deployed_detector
+
+    else:
+        deployed_classifier = ClassifierDeploy.from_config_dict(model_agnostic_config)
+        deployed_classifier.deployed_id = deployed_id
+        return deployed_classifier

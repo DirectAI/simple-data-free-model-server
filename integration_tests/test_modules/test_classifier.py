@@ -339,3 +339,38 @@ class TestClassifyInference(unittest.TestCase):
         classify_response_augmented_json = classify_response_augmented.json()
 
         self.assertNotEqual(classify_response_json, classify_response_augmented_json)
+
+    def test_deploy_and_get_of_classifier(self) -> None:
+        # Deploy the classifier
+        body = {
+            "classifier_configs": [
+                {
+                    "name": "bottle",
+                    "examples_to_include": ["bottle"],
+                    "examples_to_exclude": [],
+                },
+                {
+                    "name": "can",
+                    "examples_to_include": ["can"],
+                    "examples_to_exclude": [],
+                },
+            ],
+            "augment_examples": True,
+        }
+        deploy_response = requests.post(self.endpoint + "deploy_classifier", json=body)
+        deploy_response_json = deploy_response.json()
+        self.assertTrue("deployed_id" in deploy_response_json)
+        self.assertEqual(deploy_response_json["message"], "New model deployed.")
+        deployed_id = deploy_response_json["deployed_id"]
+
+        # Validate that running a GET request on /model returns the same model config
+        model_response = requests.get(
+            self.endpoint + f"model?deployed_id={deployed_id}"
+        )
+        self.assertEqual(model_response.status_code, 200)
+        model_response_json = model_response.json()
+
+        expected_model_config = body
+        expected_model_config["deployed_id"] = deployed_id
+
+        self.assertEqual(model_response_json, expected_model_config)

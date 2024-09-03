@@ -140,6 +140,30 @@ class DetectorDeploy(BaseModel):
     class Config:
         orm_mode = True
 
+    @classmethod
+    def from_config_dict(cls, config_dict: dict) -> "DetectorDeploy":
+        detector_configs = [
+            SingleDetectorClass(
+                name=k,
+                examples_to_include=v,
+                examples_to_exclude=(
+                    config_dict["exc_sub_labels_dict"].get(k, [])
+                    if config_dict.get("exc_sub_labels_dict")
+                    else []
+                ),
+                detection_threshold=config_dict["label_conf_thres"].get(k, 0.1),
+            )
+            for k, v in config_dict["inc_sub_labels_dict"].items()
+        ]
+
+        return cls(
+            detector_configs=detector_configs,
+            nms_threshold=config_dict.get("nms_threshold", 0.4),
+            class_agnostic_nms=config_dict.get("class_agnostic_nms", True),
+            augment_examples=config_dict.get("augment_examples", True),
+            deployed_id=config_dict.get("deployed_id"),
+        )
+
     async def save_configuration(self, config_cache: redis.Redis) -> dict:
         logger.info(f"Detector Configs: {self.detector_configs}")
         for detector_config in self.detector_configs:
