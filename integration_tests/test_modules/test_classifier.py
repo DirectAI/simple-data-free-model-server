@@ -363,9 +363,9 @@ class TestClassifyInference(unittest.TestCase):
         self.assertEqual(deploy_response_json["message"], "New model deployed.")
         deployed_id = deploy_response_json["deployed_id"]
 
-        # Validate that running a GET request on /model returns the same model config
+        # Validate that running a GET request on /model_config returns the same model config
         model_response = requests.get(
-            self.endpoint + f"model?deployed_id={deployed_id}"
+            self.endpoint + f"model_config?deployed_id={deployed_id}"
         )
         self.assertEqual(model_response.status_code, 200)
         model_response_json = model_response.json()

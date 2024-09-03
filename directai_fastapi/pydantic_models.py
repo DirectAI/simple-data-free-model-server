@@ -70,6 +70,15 @@ class ClassifierDeploy(BaseModel):
     def from_config_dict(
         cls: Type[_ClassifierDeploy], config_dict: dict
     ) -> _ClassifierDeploy:
+        labels = set(config_dict.get("labels", []))
+        inc_keys = set(config_dict.get("inc_sub_labels_dict", {}).keys())
+        exc_keys = set(config_dict.get("exc_sub_labels_dict", {}).keys())
+
+        if labels != inc_keys or labels != exc_keys:
+            raise ValueError(
+                "Labels, inc_sub_labels_dict keys, and exc_sub_labels_dict keys must be equal"
+            )
+
         classifier_configs = [
             SingleClassifierClass(
                 name=k,
@@ -107,6 +116,7 @@ class ClassifierDeploy(BaseModel):
             else:
                 message = "New model deployed."
             self.deployed_id = str(uuid.uuid4())
+            config_dict["deployed_id"] = self.deployed_id
         else:
             message = "Model updated."
 
@@ -142,6 +152,15 @@ class DetectorDeploy(BaseModel):
 
     @classmethod
     def from_config_dict(cls, config_dict: dict) -> "DetectorDeploy":
+        labels = set(config_dict.get("labels", []))
+        inc_keys = set(config_dict.get("inc_sub_labels_dict", {}).keys())
+        exc_keys = set(config_dict.get("exc_sub_labels_dict", {}).keys())
+
+        if labels != inc_keys or labels != exc_keys:
+            raise ValueError(
+                "Labels, inc_sub_labels_dict keys, and exc_sub_labels_dict keys must be equal"
+            )
+
         detector_configs = [
             SingleDetectorClass(
                 name=k,

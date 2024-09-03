@@ -217,7 +217,7 @@ async def run_detector(
 
 
 @app.get(
-    "/model",
+    "/model_config",
     include_in_schema=True,
     responses={
         200: {"model": Union[DetectorDeploy, ClassifierDeploy]},
@@ -234,10 +234,8 @@ async def get_model(
     is_detector = "nms_threshold" in model_agnostic_config
     if is_detector:
         deployed_detector = DetectorDeploy.from_config_dict(model_agnostic_config)
-        deployed_detector.deployed_id = deployed_id
         return deployed_detector
 
     else:
         deployed_classifier = ClassifierDeploy.from_config_dict(model_agnostic_config)
-        deployed_classifier.deployed_id = deployed_id
         return deployed_classifier
