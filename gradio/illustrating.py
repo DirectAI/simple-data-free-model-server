@@ -24,6 +24,10 @@ def display_bounding_boxes(
     draw = ImageDraw.Draw(pil_image)
     font = ImageFont.load_default()
     # image is assumed to be an OpenCV image
+    # Set font scale and line thickness adaptively
+    width, height = pil_image.size  # PIL image uses size attribute
+    font_scale = max(min(height, width) / 1200, 0.3)
+    thickness = int(max(min(height, width) / 300, 1))
     colors = {}
     for bbox in dets:
         tlbr = bbox["tlbr"]
@@ -36,10 +40,6 @@ def display_bounding_boxes(
             if label not in colors:
                 colors[label] = get_color(label)
             color = colors[label]
-            # Set font scale and line thickness adaptively
-            width, height = pil_image.size  # PIL image uses size attribute
-            font_scale = max(min(height, width) / 1200, 0.3)
-            thickness = int(max(min(height, width) / 300, 1))
 
             draw.rectangle((top_left, bottom_right), outline=color, width=thickness)
             draw.text(
