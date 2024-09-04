@@ -259,8 +259,14 @@ def deploy_detector(detector_config: dict) -> str:
     return response_json["deployed_id"]
 
 
-def get_detector_results(pil_image: Image.Image, deployed_id: str) -> list:
+def get_detector_results(
+    pil_image: Union[Image.Image, np.ndarray, str], deployed_id: str
+) -> list:
     img_byte_arr = io.BytesIO()
+    if isinstance(pil_image, np.ndarray):
+        pil_image = Image.fromarray(pil_image)
+    elif isinstance(pil_image, str):
+        pil_image = Image.open(pil_image)
     pil_image.save(img_byte_arr, format="JPEG")
     img_byte_arr_val = img_byte_arr.getvalue()
 
