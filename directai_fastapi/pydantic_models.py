@@ -93,7 +93,8 @@ class ClassifierDeploy(BaseModel):
         ]
         return cls(
             classifier_configs=classifier_configs,
-            augment_examples=config_dict["augment_examples"],
+            augment_examples=config_dict.get("augment_examples", True),
+            deployed_id=config_dict.get("deployed_id"),
         )
 
     async def save_configuration(self, config_cache: redis.Redis) -> dict:
@@ -116,13 +117,13 @@ class ClassifierDeploy(BaseModel):
             else:
                 message = "New model deployed."
             self.deployed_id = str(uuid.uuid4())
-            config_dict["deployed_id"] = self.deployed_id
         else:
             message = "Model updated."
 
         assert (
             self.deployed_id is not None
         ), "deployed_id should not be None at this point"
+        config_dict["deployed_id"] = self.deployed_id
         await config_cache.set(self.deployed_id, json.dumps(config_dict))
         return {"deployed_id": self.deployed_id, "message": message}
 
@@ -229,6 +230,7 @@ class DetectorDeploy(BaseModel):
         assert (
             self.deployed_id is not None
         ), "deployed_id should not be None at this point"
+        config_dict["deployed_id"] = self.deployed_id
         await config_cache.set(self.deployed_id, json.dumps(config_dict))
         return {"deployed_id": self.deployed_id, "message": message}
 

@@ -52,6 +52,7 @@ class TestClassifierDeploy(unittest.TestCase):
                 "class2": ["example6"],
             },
             "augment_examples": True,
+            "deployed_id": "sample_deployed_id",
         }
 
         with self.assertRaises(ValueError) as context:
