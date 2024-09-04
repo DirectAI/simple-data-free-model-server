@@ -74,9 +74,9 @@ class ClassifierDeploy(BaseModel):
         inc_keys = set(config_dict.get("inc_sub_labels_dict", {}).keys())
         exc_keys = set(config_dict.get("exc_sub_labels_dict", {}).keys())
 
-        if labels != inc_keys or labels != exc_keys:
+        if labels != inc_keys or not exc_keys.issubset(labels):
             raise ValueError(
-                "Labels, inc_sub_labels_dict keys, and exc_sub_labels_dict keys must be equal"
+                "Labels and inc_sub_labels_dict keys must be equal. exc_sub_labels_dict keys must be a subset of labels."
             )
 
         classifier_configs = [
@@ -157,9 +157,9 @@ class DetectorDeploy(BaseModel):
         inc_keys = set(config_dict.get("inc_sub_labels_dict", {}).keys())
         exc_keys = set(config_dict.get("exc_sub_labels_dict", {}).keys())
 
-        if labels != inc_keys or labels != exc_keys:
+        if labels != inc_keys or not exc_keys.issubset(labels):
             raise ValueError(
-                "Labels, inc_sub_labels_dict keys, and exc_sub_labels_dict keys must be equal"
+                "Labels and inc_sub_labels_dict keys must be equal. exc_sub_labels_dict keys must be a subset of labels."
             )
 
         detector_configs = [
