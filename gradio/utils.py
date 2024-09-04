@@ -1,6 +1,7 @@
 import json
 import requests
 import gradio as gr  # type: ignore[import-untyped]
+from copy import deepcopy
 
 from typing import Tuple, Union, List, Optional
 import numpy as np
@@ -15,11 +16,13 @@ from modeling import (
     ModelType,
     deploy_classifier,
     get_classifier_results,
-    append_flipped_bool_decorator,
 )
 
+FASTAPI_HOST = "host.docker.internal"
+FASTAPI_PORT = 8000
+endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
 
-@append_flipped_bool_decorator
+
 def upload_file(
     file_bytes: bytes, models_state_val: DualModelInterface
 ) -> DualModelInterface:
@@ -32,28 +35,37 @@ def upload_file(
     except Exception:
         gr.Info("Error Parsing JSON", duration=2)
 
-    return models_state_val
+    return deepcopy(models_state_val)
 
 
-@append_flipped_bool_decorator
+def upload_json_data(
+    uuid_to_grab: str, models_state_val: DualModelInterface
+) -> DualModelInterface:
+    response = requests.get(endpoint + f"model_config?deployed_id={uuid_to_grab}")
+    json_data = response.json()
+    if models_state_val.current_model_type == ModelType.CLASSIFIER:
+        models_state_val.classifier_state = ClassifierDeploy.parse_obj(json_data)
+    elif models_state_val.current_model_type == ModelType.DETECTOR:
+        models_state_val.detector_state = DetectorDeploy.parse_obj(json_data)
+    return deepcopy(models_state_val)
+
+
 def update_class_detection_threshold(
     class_idx: int, models_state_val: DualModelInterface, threshold_val: float
 ) -> Tuple[DualModelInterface, int, bool]:
     models_state_val.detector_state.detector_configs[class_idx].detection_threshold = (
         threshold_val
     )
-    return models_state_val, class_idx, True
+    return deepcopy(models_state_val), class_idx, True
 
 
-@append_flipped_bool_decorator
 def update_nms_threshold(
     models_state_val: DualModelInterface, nms_threshold_val: float
 ) -> DualModelInterface:
     models_state_val.detector_state.nms_threshold = nms_threshold_val
-    return models_state_val
+    return deepcopy(models_state_val)
 
 
-@append_flipped_bool_decorator
 def update_class_label(
     class_idx: int, class_name: str, models_state_val: DualModelInterface
 ) -> DualModelInterface:
@@ -62,10 +74,9 @@ def update_class_label(
     if len(current_configs[class_idx].examples_to_include) == 0:
         current_configs[class_idx].examples_to_include = [class_name]
 
-    return models_state_val
+    return deepcopy(models_state_val)
 
 
-@append_flipped_bool_decorator
 def update_include_example(
     class_idx: int,
     include_idx: int,
@@ -74,10 +85,9 @@ def update_include_example(
 ) -> DualModelInterface:
     current_configs = models_state_val.current_configs
     current_configs[class_idx].examples_to_include[include_idx] = label_name
-    return models_state_val
+    return deepcopy(models_state_val)
 
 
-@append_flipped_bool_decorator
 def update_exclude_example(
     class_idx: int,
     exclude_idx: int,
@@ -86,10 +96,9 @@ def update_exclude_example(
 ) -> DualModelInterface:
     current_configs = models_state_val.current_configs
     current_configs[class_idx].examples_to_exclude[exclude_idx] = label_name
-    return models_state_val
+    return deepcopy(models_state_val)
 
 
-@append_flipped_bool_decorator
 def change_example_count(
     class_idx: int,
     type_of_example: str,
@@ -114,7 +123,7 @@ def change_example_count(
         attr_to_modify = attr_to_modify[:-1]
         setattr(current_configs[class_idx], type_of_example, attr_to_modify)
 
-    return models_state_val, class_idx, True
+    return deepcopy(models_state_val), class_idx, True
 
 
 def deploy_and_infer(
@@ -148,7 +157,6 @@ def deploy_and_infer(
         return {}
 
 
-@append_flipped_bool_decorator
 def update_models_state(
     dropdown_val: str, models_state_val: DualModelInterface
 ) -> DualModelInterface:
@@ -157,4 +165,4 @@ def update_models_state(
     elif dropdown_val == "Classifier":
         models_state_val.overwrite_classifier()
     models_state_val.current_model_type = ModelType(dropdown_val)
-    return models_state_val
+    return deepcopy(models_state_val)
