@@ -179,9 +179,9 @@ class DualModelInterface:
     def display_dict(self) -> dict:
         display_dict = self.full_model_dict()
         if self.current_model_type == ModelType.CLASSIFIER:
-            keys_to_delete = ["deployed_id", "augment_examples"]
+            keys_to_delete = ["augment_examples"]
         elif self.current_model_type == ModelType.DETECTOR:
-            keys_to_delete = ["class_agnostic_nms", "deployed_id", "augment_examples"]
+            keys_to_delete = ["class_agnostic_nms", "augment_examples"]
         else:
             raise ValueError("Model type is undefined. Can't obtain visible dict.")
 
@@ -193,27 +193,26 @@ class DualModelInterface:
 
 def deploy_classifier(classifier_config: dict) -> str:
     response = requests.post(endpoint + "deploy_classifier", json=classifier_config)
-    if response.status_code == 500:
-        raise ValueError(response.text)
     response_json = response.json()
-    if response.status_code != 200:
+    if response.status_code == 422:
         raise ValueError(response_json["message"])
+    elif response.status_code == 500:
+        raise RuntimeError(response.text)
+    elif response.status_code != 200:
+        raise Exception(response_json["message"])
     return response_json["deployed_id"]
 
 
 def get_classifier_results(
-    pil_image: Union[Image.Image, np.ndarray], deployed_id: str
+    pil_image: Union[Image.Image, np.ndarray, str], deployed_id: str
 ) -> dict:
+    img_byte_arr = io.BytesIO()
     if isinstance(pil_image, np.ndarray):
-        img_byte_arr = io.BytesIO()
         pil_image = Image.fromarray(pil_image)
-        pil_image.save(img_byte_arr, format="JPEG")
-        img_byte_arr_val = img_byte_arr.getvalue()
     elif isinstance(pil_image, str):
         pil_image = Image.open(pil_image)
-        img_byte_arr = io.BytesIO()
-        pil_image.save(img_byte_arr, format="JPEG")
-        img_byte_arr_val = img_byte_arr.getvalue()
+    pil_image.save(img_byte_arr, format="JPEG")
+    img_byte_arr_val = img_byte_arr.getvalue()
 
     files = {
         "data": ("image.jpg", img_byte_arr_val, "image/jpeg"),
@@ -228,3 +227,41 @@ def get_classifier_results(
     if response.status_code != 200:
         raise ValueError(response_json["message"])
     return response_json["scores"]
+
+
+def deploy_detector(detector_config: dict) -> str:
+    response = requests.post(endpoint + "deploy_detector", json=detector_config)
+    response_json = response.json()
+    if response.status_code == 422:
+        raise ValueError(response_json["message"])
+    elif response.status_code == 500:
+        raise RuntimeError(response.text)
+    elif response.status_code != 200:
+        raise Exception(response_json["message"])
+    return response_json["deployed_id"]
+
+
+def get_detector_results(
+    pil_image: Union[Image.Image, np.ndarray, str], deployed_id: str
+) -> list:
+    img_byte_arr = io.BytesIO()
+    if isinstance(pil_image, np.ndarray):
+        pil_image = Image.fromarray(pil_image)
+    elif isinstance(pil_image, str):
+        pil_image = Image.open(pil_image)
+    pil_image.save(img_byte_arr, format="JPEG")
+    img_byte_arr_val = img_byte_arr.getvalue()
+
+    files = {
+        "data": ("image.jpg", img_byte_arr_val, "image/jpeg"),
+    }
+
+    params = {"deployed_id": deployed_id}
+
+    response = requests.post(endpoint + "detect", params=params, files=files)
+    if response.status_code == 500:
+        raise ValueError(response.text)
+    response_json = response.json()
+    if response.status_code != 200:
+        raise ValueError(response_json["message"])
+    return response_json

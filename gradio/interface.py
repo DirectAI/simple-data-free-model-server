@@ -13,15 +13,16 @@ from utils import (
     update_include_example,
     update_exclude_example,
     change_example_count,
-    deploy_and_infer,
     update_class_detection_threshold,
     update_models_state,
     update_nms_threshold,
+    dual_model_infer,
+    dual_model_deploy,
 )
 
 from modeling import DualModelInterface, ModelType
 
-from typing import Union
+from typing import Union, Tuple
 
 css = """
 #configuration_accordion {background-color: #0B0F19}
@@ -47,7 +48,7 @@ with gr.Blocks(css=css) as demo:
             @gr.render(
                 inputs=[models_state, current_class_idx, current_class_accordion_open],
             )
-            def render_count(
+            def render_model_update(
                 models_state_val: DualModelInterface,
                 class_idx: int,
                 is_class_accordion_open: bool,
@@ -270,26 +271,46 @@ with gr.Blocks(css=css) as demo:
                         model_json_textbox = gr.JSON(
                             value=models_state_val.display_dict(),
                         )
+                        deploy_config_button = gr.Button("Deploy JSON to Production")
+
+                        deploy_config_button.click(
+                            lambda x: dual_model_deploy(
+                                models_state_val=x,
+                                ephemeral_model_id=x.current_state.deployed_id,
+                            ),
+                            inputs=models_state,
+                        )
 
         with gr.Column():
+            raw_img_to_hide = gr.Image(visible=False)
             img_to_display = gr.Image()
+            classification_label = gr.Label(visible=False)
 
-            @gr.render(
-                inputs=[models_state, img_to_display],
-                triggers=[models_state.change, img_to_display.input],
+            # if we change the image input, save it to the ~hidden~ image component for later use
+            img_to_display.input(
+                lambda x: gr.Image(x, visible=False),
+                inputs=[img_to_display],
+                outputs=[raw_img_to_hide],
+            ).then(
+                dual_model_infer,
+                inputs=[raw_img_to_hide, models_state, frontend_ephemeral_deployed_id],
+                outputs=[
+                    img_to_display,
+                    classification_label,
+                    frontend_ephemeral_deployed_id,
+                ],
             )
-            def render_results(
-                models_state_val: DualModelInterface,
-                img_to_display: Union[Image.Image, np.ndarray],
-            ) -> None:
-                if img_to_display is not None:
-                    if models_state_val.current_model_type == "Detector":
-                        gr.Info("Detection Inference not yet supported.")
-                    else:
-                        inference_results = deploy_and_infer(
-                            img_to_display, models_state_val
-                        )
-                        _ = gr.Label(inference_results)
 
+            # if we update the model, run inference again (on the raw image)
+            # note that once gradio fixes its image issue, we should be monitoring the model state, not the proxy boolean
+            models_state.change(
+                dual_model_infer,
+                inputs=[raw_img_to_hide, models_state, frontend_ephemeral_deployed_id],
+                outputs=[
+                    img_to_display,
+                    classification_label,
+                    frontend_ephemeral_deployed_id,
+                ],
+            )
 
 demo.launch(server_name="0.0.0.0")

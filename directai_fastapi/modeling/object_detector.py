@@ -551,6 +551,8 @@ def run_nms_via_adjacency_list(
     valid_box_indices_by_descending_score: torch.Tensor,
     adjacency_list: list[torch.Tensor],
 ) -> torch.Tensor:
+    if valid_box_indices_by_descending_score.numel() == 0:
+        return valid_box_indices_by_descending_score
     # we compute the indices of the start and end of each box's adjacent boxes
     # since our graph representation is just a list of edges, we would like to know which edges correspond to which nodes
     # as the first node is sorted, we can just take the difference between adjacent nodes to get the start and end of each node's edges
