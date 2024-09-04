@@ -27,6 +27,8 @@ FASTAPI_HOST = "host.docker.internal"
 FASTAPI_PORT = 8000
 endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
 
+# See Gradio explanation for deepcopy() usage motivations: https://github.com/gradio-app/gradio/issues/9221
+
 
 def upload_file(
     file_bytes: bytes, models_state_val: DualModelInterface
