@@ -70,6 +70,15 @@ class ClassifierDeploy(BaseModel):
     def from_config_dict(
         cls: Type[_ClassifierDeploy], config_dict: dict
     ) -> _ClassifierDeploy:
+        labels = set(config_dict.get("labels", []))
+        inc_keys = set(config_dict.get("inc_sub_labels_dict", {}).keys())
+        exc_keys = set(config_dict.get("exc_sub_labels_dict", {}).keys())
+
+        if labels != inc_keys or not exc_keys.issubset(labels):
+            raise ValueError(
+                "Labels and inc_sub_labels_dict keys must be equal. exc_sub_labels_dict keys must be a subset of labels."
+            )
+
         classifier_configs = [
             SingleClassifierClass(
                 name=k,
@@ -84,7 +93,8 @@ class ClassifierDeploy(BaseModel):
         ]
         return cls(
             classifier_configs=classifier_configs,
-            augment_examples=config_dict["augment_examples"],
+            augment_examples=config_dict.get("augment_examples", True),
+            deployed_id=config_dict.get("deployed_id"),
         )
 
     async def save_configuration(self, config_cache: redis.Redis) -> dict:
@@ -113,6 +123,7 @@ class ClassifierDeploy(BaseModel):
         assert (
             self.deployed_id is not None
         ), "deployed_id should not be None at this point"
+        config_dict["deployed_id"] = self.deployed_id
         await config_cache.set(self.deployed_id, json.dumps(config_dict))
         return {"deployed_id": self.deployed_id, "message": message}
 
@@ -139,6 +150,39 @@ class DetectorDeploy(BaseModel):
 
     class Config:
         orm_mode = True
+
+    @classmethod
+    def from_config_dict(cls, config_dict: dict) -> "DetectorDeploy":
+        labels = set(config_dict.get("labels", []))
+        inc_keys = set(config_dict.get("inc_sub_labels_dict", {}).keys())
+        exc_keys = set(config_dict.get("exc_sub_labels_dict", {}).keys())
+
+        if labels != inc_keys or not exc_keys.issubset(labels):
+            raise ValueError(
+                "Labels and inc_sub_labels_dict keys must be equal. exc_sub_labels_dict keys must be a subset of labels."
+            )
+
+        detector_configs = [
+            SingleDetectorClass(
+                name=k,
+                examples_to_include=v,
+                examples_to_exclude=(
+                    config_dict["exc_sub_labels_dict"].get(k, [])
+                    if config_dict.get("exc_sub_labels_dict")
+                    else []
+                ),
+                detection_threshold=config_dict["label_conf_thres"].get(k, 0.1),
+            )
+            for k, v in config_dict["inc_sub_labels_dict"].items()
+        ]
+
+        return cls(
+            detector_configs=detector_configs,
+            nms_threshold=config_dict.get("nms_threshold", 0.4),
+            class_agnostic_nms=config_dict.get("class_agnostic_nms", True),
+            augment_examples=config_dict.get("augment_examples", True),
+            deployed_id=config_dict.get("deployed_id"),
+        )
 
     async def save_configuration(self, config_cache: redis.Redis) -> dict:
         logger.info(f"Detector Configs: {self.detector_configs}")
@@ -186,6 +230,7 @@ class DetectorDeploy(BaseModel):
         assert (
             self.deployed_id is not None
         ), "deployed_id should not be None at this point"
+        config_dict["deployed_id"] = self.deployed_id
         await config_cache.set(self.deployed_id, json.dumps(config_dict))
         return {"deployed_id": self.deployed_id, "message": message}
 
