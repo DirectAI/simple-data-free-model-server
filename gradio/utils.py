@@ -4,6 +4,7 @@ import gradio as gr  # type: ignore[import-untyped]
 from copy import deepcopy
 
 from typing import Tuple, Union, List, Optional
+from pydantic_core._pydantic_core import ValidationError
 import numpy as np
 from PIL import Image
 
@@ -43,10 +44,14 @@ def upload_json_data(
 ) -> DualModelInterface:
     response = requests.get(endpoint + f"model_config?deployed_id={uuid_to_grab}")
     json_data = response.json()
-    if models_state_val.current_model_type == ModelType.CLASSIFIER:
-        models_state_val.classifier_state = ClassifierDeploy.parse_obj(json_data)
-    elif models_state_val.current_model_type == ModelType.DETECTOR:
-        models_state_val.detector_state = DetectorDeploy.parse_obj(json_data)
+    try:
+        if models_state_val.current_model_type == ModelType.CLASSIFIER:
+            models_state_val.classifier_state = ClassifierDeploy.parse_obj(json_data)
+        elif models_state_val.current_model_type == ModelType.DETECTOR:
+            models_state_val.detector_state = DetectorDeploy.parse_obj(json_data)
+    except ValidationError:
+        gr.Info("Model Type Mismatch. Please switch *Type of Model* and try again.")
+        return models_state_val
     return deepcopy(models_state_val)
 
 

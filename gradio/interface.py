@@ -1,9 +1,9 @@
 import json
+import uuid
 import gradio as gr  # type: ignore[import-untyped]
 from functools import partial
 from PIL import Image
 import numpy as np
-import requests
 
 
 from utils import (
@@ -28,6 +28,7 @@ css = """
 """
 
 with gr.Blocks(css=css) as demo:
+    frontend_ephemeral_deployed_id = gr.State("")
     models_state = gr.State(DualModelInterface())
     current_class_idx = gr.State(0)
     current_class_accordion_open = gr.State(False)
