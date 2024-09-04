@@ -304,7 +304,7 @@ with gr.Blocks(css=css) as demo:
 
         with gr.Column():
             raw_img_to_hide = gr.Image(visible=False)
-            with gr.Accordion("Upload an Image via URL", open=False):
+            with gr.Accordion("Upload an Image via URL", open=False) as url_accordion:
                 optional_img_url = gr.Textbox(label="", placeholder="your://url/here")
                 img_url_submit_button = gr.Button("Submit")
 
@@ -314,9 +314,13 @@ with gr.Blocks(css=css) as demo:
             img_to_display = gr.Image()
             classification_label = gr.Label(visible=False)
             img_url_submit_button.click(
-                lambda img_url: Image.open(requests.get(img_url, stream=True).raw),
+                lambda img_url: (
+                    Image.open(requests.get(img_url, stream=True).raw),
+                    gr.Accordion("Upload an Image via URL", open=False),
+                    gr.Textbox(label="", placeholder="your://url/here", value=""),
+                ),
                 [optional_img_url],
-                [raw_img_to_hide],
+                [raw_img_to_hide, url_accordion, optional_img_url],
             ).then(
                 dual_model_infer,
                 inputs=[raw_img_to_hide, models_state],
