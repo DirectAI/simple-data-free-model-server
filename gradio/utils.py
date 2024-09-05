@@ -197,20 +197,18 @@ def detect(
 
 def dual_model_deploy(
     models_state_val: DualModelInterface,
-    ephemeral_model_id: str,
-) -> str:
+    ephemeral_model_id: Optional[str],
+) -> Optional[str]:
     model_config_dict = models_state_val.current_state.dict()
-    if ephemeral_model_id == "":
-        model_config_dict["deployed_id"] = None
-    else:
-        model_config_dict["deployed_id"] = ephemeral_model_id
+    print("ephemeral model id:", ephemeral_model_id)
+    model_config_dict["deployed_id"] = ephemeral_model_id
     try:
         if models_state_val.current_model_type == ModelType.DETECTOR:
             deployed_id = deploy_detector(model_config_dict)
         elif models_state_val.current_model_type == ModelType.CLASSIFIER:
             deployed_id = deploy_classifier(model_config_dict)
         else:
-            deployed_id = ephemeral_model_id
+            return ephemeral_model_id
     except json.decoder.JSONDecodeError as e:
         gr.Info("JSON Decode Error in Model Deploy", duration=2)
         return ephemeral_model_id
@@ -237,7 +235,7 @@ def dual_model_infer(
     gradio_img: Union[Image.Image, np.ndarray, str],
     models_state_val: DualModelInterface,
     ephemeral_model_id: str,
-) -> Tuple[Image.Image, gr.Label, str]:
+) -> Tuple[Image.Image, gr.Label, Optional[str]]:
     # deal with image typing
     if gradio_img is None:
         return gradio_img, gr.Label(visible=False), ephemeral_model_id
@@ -252,6 +250,9 @@ def dual_model_infer(
     deployed_id = dual_model_deploy(
         models_state_val=models_state_val, ephemeral_model_id=ephemeral_model_id
     )
+    if deployed_id is None:
+        # there was an issue in the deployment and a .info() was already displayed
+        return pil_image, gr.Label(visible=False), ephemeral_model_id
 
     # deal with inference
     if models_state_val.current_model_type == ModelType.DETECTOR:
@@ -290,3 +291,15 @@ def update_models_state(
         models_state_val.overwrite_classifier()
     models_state_val.current_model_type = ModelType(dropdown_val)
     return deepcopy(models_state_val)
+
+
+def deploy_to_production(
+    models_state_val: DualModelInterface,
+) -> Tuple[DualModelInterface, dict]:
+    deployed_id = dual_model_deploy(
+        models_state_val=models_state_val,
+        ephemeral_model_id=models_state_val.current_state.deployed_id,
+    )
+    models_state_val.current_state.deployed_id = deployed_id
+    # we deliberately don't return a deepcopy here as we don't want to trigger the models_state.change() event
+    return models_state_val, models_state_val.display_dict()

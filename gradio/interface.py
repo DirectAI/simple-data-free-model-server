@@ -19,6 +19,7 @@ from utils import (
     update_nms_threshold,
     dual_model_infer,
     dual_model_deploy,
+    deploy_to_production,
 )
 
 from modeling import DualModelInterface, ModelType
@@ -30,7 +31,7 @@ css = """
 """
 
 with gr.Blocks(css=css) as demo:
-    frontend_ephemeral_deployed_id = gr.State("")
+    frontend_ephemeral_deployed_id = gr.State(None)
     models_state = gr.State(DualModelInterface())
     current_class_idx = gr.State(0)
     current_class_accordion_open = gr.State(False)
@@ -273,13 +274,10 @@ with gr.Blocks(css=css) as demo:
                             value=models_state_val.display_dict(),
                         )
                         deploy_config_button = gr.Button("Deploy JSON to Production")
-
                         deploy_config_button.click(
-                            lambda x: dual_model_deploy(
-                                models_state_val=x,
-                                ephemeral_model_id=x.current_state.deployed_id,
-                            ),
+                            deploy_to_production,
                             inputs=models_state,
+                            outputs=[models_state, model_json_textbox],
                         )
 
         with gr.Column():
@@ -303,8 +301,12 @@ with gr.Blocks(css=css) as demo:
                 [raw_img_to_hide, url_accordion, optional_img_url],
             ).then(
                 dual_model_infer,
-                inputs=[raw_img_to_hide, models_state],
-                outputs=[img_to_display, classification_label],
+                inputs=[raw_img_to_hide, models_state, frontend_ephemeral_deployed_id],
+                outputs=[
+                    img_to_display,
+                    classification_label,
+                    frontend_ephemeral_deployed_id,
+                ],
             )
             classification_label = gr.Label(visible=False)
 
