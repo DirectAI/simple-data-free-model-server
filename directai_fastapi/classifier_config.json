@@ -1,0 +1,711 @@
+{
+    "classifier_configs": [
+        {
+            "name": "grilled_salmon",
+            "examples_to_include": [
+                "grilled salmon"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "hot_and_sour_soup",
+            "examples_to_include": [
+                "hot and sour soup"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "spaghetti_carbonara",
+            "examples_to_include": [
+                "spaghetti carbonara"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "tiramisu",
+            "examples_to_include": [
+                "tiramisu"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "carrot_cake",
+            "examples_to_include": [
+                "carrot cake"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "pad_thai",
+            "examples_to_include": [
+                "pad thai"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "beef_carpaccio",
+            "examples_to_include": [
+                "beef carpaccio"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "ceviche",
+            "examples_to_include": [
+                "ceviche"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "french_toast",
+            "examples_to_include": [
+                "french toast"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "tacos",
+            "examples_to_include": [
+                "tacos"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "beignets",
+            "examples_to_include": [
+                "beignets"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "spaghetti_bolognese",
+            "examples_to_include": [
+                "spaghetti bolognese"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "omelette",
+            "examples_to_include": [
+                "omelette"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "french_fries",
+            "examples_to_include": [
+                "french fries"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "ice_cream",
+            "examples_to_include": [
+                "ice cream"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "huevos_rancheros",
+            "examples_to_include": [
+                "huevos rancheros"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "apple_pie",
+            "examples_to_include": [
+                "apple pie"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "tuna_tartare",
+            "examples_to_include": [
+                "tuna tartare"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "fried_calamari",
+            "examples_to_include": [
+                "fried calamari"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "takoyaki",
+            "examples_to_include": [
+                "takoyaki"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "waffles",
+            "examples_to_include": [
+                "waffles"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "fried_rice",
+            "examples_to_include": [
+                "fried rice"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "oysters",
+            "examples_to_include": [
+                "oysters"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "grilled_cheese_sandwich",
+            "examples_to_include": [
+                "grilled cheese sandwich"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "falafel",
+            "examples_to_include": [
+                "falafel"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "pulled_pork_sandwich",
+            "examples_to_include": [
+                "pulled pork sandwich"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "beef_tartare",
+            "examples_to_include": [
+                "beef tartare"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "bruschetta",
+            "examples_to_include": [
+                "bruschetta"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "pork_chop",
+            "examples_to_include": [
+                "pork chop"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "filet_mignon",
+            "examples_to_include": [
+                "filet mignon"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "prime_rib",
+            "examples_to_include": [
+                "prime rib"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "ramen",
+            "examples_to_include": [
+                "ramen"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "pho",
+            "examples_to_include": [
+                "pho"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "fish_and_chips",
+            "examples_to_include": [
+                "fish and chips"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "gyoza",
+            "examples_to_include": [
+                "gyoza"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "sashimi",
+            "examples_to_include": [
+                "sashimi"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "hot_dog",
+            "examples_to_include": [
+                "hot dog"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "croque_madame",
+            "examples_to_include": [
+                "croque madame"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "deviled_eggs",
+            "examples_to_include": [
+                "deviled eggs"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "donuts",
+            "examples_to_include": [
+                "donuts"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "nachos",
+            "examples_to_include": [
+                "nachos"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "onion_rings",
+            "examples_to_include": [
+                "onion rings"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "caprese_salad",
+            "examples_to_include": [
+                "caprese salad"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "ravioli",
+            "examples_to_include": [
+                "ravioli"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "guacamole",
+            "examples_to_include": [
+                "guacamole"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "foie_gras",
+            "examples_to_include": [
+                "foie gras"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "panna_cotta",
+            "examples_to_include": [
+                "panna cotta"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "dumplings",
+            "examples_to_include": [
+                "dumplings"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "beet_salad",
+            "examples_to_include": [
+                "beet salad"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "shrimp_and_grits",
+            "examples_to_include": [
+                "shrimp and grits"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "chocolate_cake",
+            "examples_to_include": [
+                "chocolate cake"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "scallops",
+            "examples_to_include": [
+                "scallops"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "escargots",
+            "examples_to_include": [
+                "escargots"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "paella",
+            "examples_to_include": [
+                "paella"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "lobster_bisque",
+            "examples_to_include": [
+                "lobster bisque"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "cannoli",
+            "examples_to_include": [
+                "cannoli"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "cheese_plate",
+            "examples_to_include": [
+                "cheese plate"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "crab_cakes",
+            "examples_to_include": [
+                "crab cakes"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "edamame",
+            "examples_to_include": [
+                "edamame"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "mussels",
+            "examples_to_include": [
+                "mussels"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "caesar_salad",
+            "examples_to_include": [
+                "caesar salad"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "clam_chowder",
+            "examples_to_include": [
+                "clam chowder"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "red_velvet_cake",
+            "examples_to_include": [
+                "red velvet cake"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "baklava",
+            "examples_to_include": [
+                "baklava"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "miso_soup",
+            "examples_to_include": [
+                "miso soup"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "pancakes",
+            "examples_to_include": [
+                "pancakes"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "club_sandwich",
+            "examples_to_include": [
+                "club sandwich"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "strawberry_shortcake",
+            "examples_to_include": [
+                "strawberry shortcake"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "peking_duck",
+            "examples_to_include": [
+                "peking duck"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "risotto",
+            "examples_to_include": [
+                "risotto"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "macarons",
+            "examples_to_include": [
+                "macarons"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "chicken_curry",
+            "examples_to_include": [
+                "chicken curry"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "baby_back_ribs",
+            "examples_to_include": [
+                "baby back ribs"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "garlic_bread",
+            "examples_to_include": [
+                "garlic bread"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "sushi",
+            "examples_to_include": [
+                "sushi"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "spring_rolls",
+            "examples_to_include": [
+                "spring rolls"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "gnocchi",
+            "examples_to_include": [
+                "gnocchi"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "creme_brulee",
+            "examples_to_include": [
+                "creme brulee"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "breakfast_burrito",
+            "examples_to_include": [
+                "breakfast burrito"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "cheesecake",
+            "examples_to_include": [
+                "cheesecake"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "steak",
+            "examples_to_include": [
+                "steak"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "hamburger",
+            "examples_to_include": [
+                "hamburger"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "greek_salad",
+            "examples_to_include": [
+                "greek salad"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "pizza",
+            "examples_to_include": [
+                "pizza"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "french_onion_soup",
+            "examples_to_include": [
+                "french onion soup"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "lasagna",
+            "examples_to_include": [
+                "lasagna"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "frozen_yogurt",
+            "examples_to_include": [
+                "frozen yogurt"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "chicken_quesadilla",
+            "examples_to_include": [
+                "chicken quesadilla"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "churros",
+            "examples_to_include": [
+                "churros"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "seaweed_salad",
+            "examples_to_include": [
+                "seaweed salad"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "chicken_wings",
+            "examples_to_include": [
+                "chicken wings"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "lobster_roll_sandwich",
+            "examples_to_include": [
+                "lobster roll sandwich"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "samosa",
+            "examples_to_include": [
+                "samosa"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "macaroni_and_cheese",
+            "examples_to_include": [
+                "macaroni and cheese"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "chocolate_mousse",
+            "examples_to_include": [
+                "chocolate mousse"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "poutine",
+            "examples_to_include": [
+                "poutine"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "eggs_benedict",
+            "examples_to_include": [
+                "eggs benedict"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "hummus",
+            "examples_to_include": [
+                "hummus"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "bread_pudding",
+            "examples_to_include": [
+                "bread pudding"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "bibimbap",
+            "examples_to_include": [
+                "bibimbap"
+            ],
+            "examples_to_exclude": []
+        },
+        {
+            "name": "cup_cakes",
+            "examples_to_include": [
+                "cup cakes"
+            ],
+            "examples_to_exclude": []
+        }
+    ]
+}
