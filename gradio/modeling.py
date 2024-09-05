@@ -5,27 +5,11 @@ import numpy as np
 from enum import Enum
 from typing import Union, List, Optional, Any, Callable
 from pydantic import BaseModel
+from copy import deepcopy
 
 FASTAPI_HOST = "host.docker.internal"
 FASTAPI_PORT = 8000
 endpoint = f"http://{FASTAPI_HOST}:{FASTAPI_PORT}/"
-
-
-# See notes on `change_this_bool_to_force_reload` in gradio/interface.py
-# when gradio pushes a fix we can remove all decorators and maintain functionality
-def append_flipped_bool_decorator(func: Callable) -> Callable:
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if "proxy_bool" in kwargs:
-            proxy_bool = kwargs.pop("proxy_bool")
-        else:
-            proxy_bool = args[-1]
-            args = args[:-1]
-        result = func(*args, **kwargs)
-        if isinstance(result, tuple):
-            return result + (not proxy_bool,)
-        return result, not proxy_bool
-
-    return wrapper
 
 
 class SingleClassifierClass(BaseModel):
@@ -143,15 +127,13 @@ class DualModelInterface:
     def set_current_model_type(self, current_model_type: str) -> None:
         self.current_model_type = ModelType(current_model_type)
 
-    @append_flipped_bool_decorator
     def add_class(self, name: str = "") -> "DualModelInterface":
         self.current_state.add_class(name=name)
-        return self
+        return deepcopy(self)
 
-    @append_flipped_bool_decorator
     def remove_class(self) -> "DualModelInterface":
         self.current_state.remove_class()
-        return self
+        return deepcopy(self)
 
     def __len__(self) -> int:
         if self.current_model_type == ModelType.DETECTOR:
@@ -197,9 +179,9 @@ class DualModelInterface:
     def display_dict(self) -> dict:
         display_dict = self.full_model_dict()
         if self.current_model_type == ModelType.CLASSIFIER:
-            keys_to_delete = ["deployed_id", "augment_examples"]
+            keys_to_delete = ["augment_examples"]
         elif self.current_model_type == ModelType.DETECTOR:
-            keys_to_delete = ["class_agnostic_nms", "deployed_id", "augment_examples"]
+            keys_to_delete = ["class_agnostic_nms", "augment_examples"]
         else:
             raise ValueError("Model type is undefined. Can't obtain visible dict.")
 
