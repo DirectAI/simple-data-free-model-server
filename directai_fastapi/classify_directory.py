@@ -46,7 +46,11 @@ def classify_directory(
     if eval_only:
         assert "label" in ds.columns(), "Dataset must have labels to evaluate."
         # there were labels in the dataset, so we can calculate accuracy
-        accuracy = predictions.mean("is_correct")
+        num_correct_predictions = predictions.sum("is_correct")
+        num_total_predictions = predictions.count()
+        accuracy = num_correct_predictions / num_total_predictions
+        logger.info(f"Number of correct predictions: {num_correct_predictions}")
+        logger.info(f"Number of total predictions: {num_total_predictions}")
         logger.info(f"Accuracy: {accuracy}")
     else:
         assert (

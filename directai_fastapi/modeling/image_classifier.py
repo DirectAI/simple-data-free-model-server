@@ -17,8 +17,8 @@ from lru import LRU
 class ZeroShotImageClassifierWithFeedback(nn.Module):
     def __init__(
         self,
-        base_model_name: str = "ViT-H-14-quickgelu",
-        dataset_name: str = "dfn5b",
+        base_model_name: str = "ViT-B-16",
+        dataset_name: str = "dfn2b",
         max_text_batch_size: int = 512,
         max_image_batch_size: int = 512,
         device: torch.device | str = "cuda",
