@@ -1,14 +1,14 @@
 version: '2.3'
 services:
-  local_redis:
-    build: redis_data/
-    container_name: local_redis
-    ports:
-      - 6379:6379
-    volumes:
-      - ./redis_data/:/data
-    networks:
-      - deploy_network
+  # local_redis:
+  #   build: redis_data/
+  #   container_name: local_redis
+  #   ports:
+  #     - 6379:6379
+  #   volumes:
+  #     - ./redis_data/:/data
+  #   networks:
+  #     - deploy_network
   local_fastapi:
     build: directai_fastapi/
     ports: 
@@ -18,7 +18,7 @@ services:
     container_name: local_fastapi
     environment:
       - PYTHONUNBUFFERED=1
-      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_VISIBLE_DEVICES=1
       - HF_HOME=/directai_fastapi/.cache/huggingface
       - CACHE_REDIS_PORT=6379
     env_file:
@@ -28,23 +28,23 @@ services:
       - ./logs:/directai_fastapi/logs
       - ./.cache:/directai_fastapi/.cache
     shm_size: 10.24g  # because Ray complains if it's less
-    depends_on:
-      - local_redis
+    # depends_on:
+    #   - local_redis
     extra_hosts:
       - "host.docker.internal:host-gateway"
-  local_gradio:
-    build: gradio/
-    networks:
-      - deploy_network
-    ports: 
-      - 7860:7860
-    depends_on:
-      - local_fastapi
-    container_name: local_gradio
-    environment:
-      - PYTHONUNBUFFERED=1
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+  # local_gradio:
+  #   build: gradio/
+  #   networks:
+  #     - deploy_network
+  #   ports: 
+  #     - 7860:7860
+  #   depends_on:
+  #     - local_fastapi
+  #   container_name: local_gradio
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
 
 networks:
   deploy_network:

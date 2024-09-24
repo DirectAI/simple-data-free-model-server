@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ray
 from ray.data.datasource import PartitionStyle
 from ray.data.datasource.partitioning import Partitioning
@@ -8,6 +10,11 @@ from torchvision.transforms import v2  # type: ignore[import-untyped]
 from torchvision.transforms.functional import InterpolationMode  # type: ignore[import-untyped]
 import os
 from typing import Any
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pycocotools.coco import _Image, _Category
 
 from modeling.image_classifier import ZeroShotImageClassifierWithFeedback
 from modeling.object_detector import ZeroShotObjectDetectorWithFeedback
@@ -31,6 +38,7 @@ def truncate_full_path(
 def build_ray_dataset_from_directory(
     root: str,
     with_subdirs_as_labels: bool = True,
+    remove_extension: bool = True,
 ) -> ray.data.Dataset:
     # we expect images to be stored directly in the root directory
     # unless with_subdirs_as_labels is set to True
@@ -51,7 +59,13 @@ def build_ray_dataset_from_directory(
         root, mode="RGB", partitioning=partitioning, include_paths=True
     )
 
-    ds = ds.map(partial(truncate_full_path, last_n=2 if with_subdirs_as_labels else 1))
+    ds = ds.map(
+        partial(
+            truncate_full_path,
+            last_n=2 if with_subdirs_as_labels else 1,
+            remove_extension=remove_extension,
+        )
+    )
 
     return ds
 
@@ -393,9 +407,13 @@ def write_classifications_to_csv(
 def convert_detections_to_coco_format(
     detections: ray.data.Dataset,
     labels: list[str],
-    image_metadata: list[dict[str, Any]] | None = None,
-    categories_metadata: list[dict[str, Any]] | None = None,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    image_metadata: list[dict[str, Any]] | list["_Image"] | None = None,
+    categories_metadata: list[dict[str, Any]] | list["_Category"] | None = None,
+) -> tuple[
+    list[dict[str, Any]] | list["_Image"],
+    list[dict[str, Any]] | list["_Category"],
+    list[dict[str, Any]],
+]:
     # see https://docs.aws.amazon.com/rekognition/latest/customlabels-dg/md-coco-overview.html for the COCO format
     # if image_metadata or categories_metadata are not provided, we will try to infer them from the detections
     # NOTE: labels may not be redundant with categories_metadata, as the "id" field in categories_metadata may not be the same as the index of the label in labels
@@ -420,6 +438,7 @@ def convert_detections_to_coco_format(
         category["name"]: category["id"] for category in categories_metadata
     }
     label_name_to_ind = {label: i for i, label in enumerate(labels)}
+    assert label_name_to_ind.keys() == label_name_to_id.keys()
     label_ind_to_id = {
         label_name_to_ind[label]: label_name_to_id[label] for label in labels
     }
@@ -431,17 +450,19 @@ def convert_detections_to_coco_format(
 
     for row in detections.iter_rows():
         predicted_boxes = row["predicted_boxes"]
+        image_h, image_w = [int(v) for v in row["image_initial_size"]]
 
         if row["path"] not in image_path_to_id:
+            assert (
+                need_to_infer_image_metadata
+            ), f"Image metadata not provided for {row['path']}"
             image_id = len(image_metadata)
-            image_h, image_w = row["image_initial_size"]
             image_metadata.append(
                 {
                     "id": image_id,
                     "file_name": row["path"],
                     "height": image_h,
                     "width": image_w,
-                    "date_captured": "",
                 }
             )
         else:
@@ -451,7 +472,7 @@ def convert_detections_to_coco_format(
             category_id = label_ind_to_id[i]
 
             for box in predicted_boxes_in_class:
-                x_1, x_2, y_1, y_2, score = box
+                x_1, y_1, x_2, y_2, score = box.tolist()
 
                 x_1 = max(0, min(image_w, int(x_1)))
                 x_2 = max(0, min(image_w, int(x_2)))
@@ -463,11 +484,24 @@ def convert_detections_to_coco_format(
                         "image_id": image_id,
                         "category_id": category_id,
                         "bbox": [x_1, y_1, x_2 - x_1, y_2 - y_1],
-                        "score": score,
+                        "score": float(score),
                     }
                 )
 
     return image_metadata, categories_metadata, annotations
+
+
+def build_naive_detector_config_from_coco_categories_metadata(
+    categories_metadata: list[dict[str, Any]] | list["_Category"],
+) -> tuple[list[str], dict[str, list[str]]]:
+    labels = [category["name"] for category in categories_metadata]
+    inc_sub_labels_dict = {
+        label: [
+            label,
+        ]
+        for label in labels
+    }
+    return labels, inc_sub_labels_dict
 
 
 if __name__ == "__main__":
