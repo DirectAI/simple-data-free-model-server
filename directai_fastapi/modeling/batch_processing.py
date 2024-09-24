@@ -115,7 +115,13 @@ class RayDataImageClassifier:
         augment_examples: bool = True,
     ) -> None:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = ZeroShotImageClassifierWithFeedback(device=self.device)
+        self.model = ZeroShotImageClassifierWithFeedback(
+            # base_model_name="ViT-B-16",
+            # dataset_name="dfn2b",
+            # base_model_name="ViT-SO400M-14-SigLIP",
+            # dataset_name="webli",
+            device=self.device
+        )
 
         self.labels = labels
         self.inc_sub_labels_dict = inc_sub_labels_dict
@@ -157,6 +163,7 @@ class RayDataImageClassifier:
             pred = np.array([self.labels[i] for i in ind])
 
         batch["scores"] = scores.cpu().numpy()
+        batch["raw_scores"] = raw_scores.cpu().numpy()
         batch["pred"] = pred
 
         if "label" in batch:

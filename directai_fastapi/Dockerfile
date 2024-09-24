@@ -29,6 +29,9 @@ COPY unit_tests unit_tests
 RUN mkdir modeling
 COPY modeling modeling
 
+RUN mkdir reproduction_scripts
+COPY reproduction_scripts reproduction_scripts
+
 ENV PYTHONPATH "${PYTHONPATH}:/directai_fastapi"
 
 RUN chmod +x run.sh
