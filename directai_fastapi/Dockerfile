@@ -15,6 +15,8 @@ RUN apt-get install libjpeg-dev zlib1g-dev -y
 RUN pip uninstall -y pillow
 RUN CC="cc -mavx2" pip install -U --force-reinstall pillow-simd
 
+RUN apt-get install wget unzip -y
+
 COPY logging_config.py .
 COPY pydantic_models.py .
 COPY server.py .
@@ -28,6 +30,9 @@ COPY unit_tests unit_tests
 
 RUN mkdir modeling
 COPY modeling modeling
+
+RUN mkdir benchmarking
+COPY benchmarking benchmarking
 
 ENV PYTHONPATH "${PYTHONPATH}:/directai_fastapi"
 

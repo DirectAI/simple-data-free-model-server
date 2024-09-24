@@ -3,7 +3,7 @@ import fire  # type: ignore[import-untyped]
 from modeling.batch_processing import (
     build_ray_dataset_from_directory,
     run_image_classifier_against_ray_dataset,
-    write_predictions_to_csv,
+    write_classifications_to_csv,
     filter_dataset_by_path,
 )
 from pydantic_models import ClassifierDeploy
@@ -52,7 +52,7 @@ def classify_directory(
         assert (
             output_file is not None
         ), "Output file must be provided if not doing just an eval."
-        write_predictions_to_csv(predictions, output_file)
+        write_classifications_to_csv(predictions, output_file)
 
 
 if __name__ == "__main__":
