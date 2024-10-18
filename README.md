@@ -1,132 +1,78 @@
-
 # simple-data-free-model-server
-
  This is an open source implementation of DirectAI's core service, provided both to give back to the open source community that we benefited greatly from, as well as to allow our clients to continue to have service in the event that we can no longer host our API.
 
 We host zero-shot image models to allow clients to use computer vision at scale without having to collect / label lots of training data or train their own model. However, zero-shot models don't necessarily work out of the box for all cases. We introduce an algorithm for providing feedback to zero-shot models by extending the standard linear decision boundary in the model's embedding space into a two-stage nearest neighbors algorithm, which allows for much more fine-tuned control over what the model considers to belong in a particular class with minimal impact on runtime.
-  
+
+### On Pre-Commit Hooks
+- Make sure you run `pip install pre-commit` followed by `pre-commit install` before attempting to commit to the repo.
 
 ### Launching Production Service
-
 - Set your logging level preference in `directai_fastapi/.env`. See options on [python's logging documentation](https://docs.python.org/3/library/logging.html#levels). An empty string input defaults to `logging.INFO`.
-
--  `docker compose build && docker compose up`
-
-  
+- `docker compose build && docker compose up`
 
 ### Launching Integration Tests
-
--  `docker compose -f testing-docker-compose.yml build && docker compose -f testing-docker-compose.yml up`
-
-  
+- `docker compose -f testing-docker-compose.yml build && docker compose -f testing-docker-compose.yml up`
 
 ### Hardware Requirements
-
 This repository is designed to require access to an Nvidia GPU with Ampere architecture. The Ampere architecture is used by the flash attention integration in the object detector. However, it could be modified to run on older Nvidia GPUs or on CPU. Feel free to submit a pull request or raise an issue if you need that support!
 
-
 ### Running Offline Batch Classification
-
 We've built infrastructure to make it easy to quickly run an arbitrary classifier against a dataset. If your images are organized like so:
 
-  
+    /dataset_directory
+    │
+    ├── image1.jpg
+    ├── image2.jpg
+    ├── image3.jpg
+    ├── ...
+    └── imageN.jpg
+and you have a JSON file defining the image classifier you'd like to run at `classifier_config.json`, you can dump classification labels to an `output.csv` via:
 
-/dataset_directory
-
-│
-
-├── image1.jpg
-
-├── image2.jpg
-
-├── image3.jpg
-
-├── ...
-
-└── imageN.jpg
-
-and you have a JSON file defining the image classifier you'd like to run at `classifier_config.json`, you can dump classification labels to an `output.csv` via (all one line):
-
-  
-
-`docker-compose build && docker-compose run local_fastapi python classify_directory.py --root=dataset_directory --classifier_json_file=classifier_config.json --output_file=output.csv`
-
-  
+ - `docker-compose build && docker-compose run local_fastapi
+   python classify_directory.py --root=dataset_directory
+   --classifier_json_file=classifier_config.json --output_file=output.csv`
 
 Make sure that all the files are mounted within the Docker container. You can do that by either modifying the volumes specified in `docker-compose.yml`, or by placing them all within the `.cache` directory which is mounted by default.
 
-  
-
 If your images have labels and are organized like so:
 
-  
+    /dataset_directory
+    │
+    ├── /label1
+    │   ├── image1.jpg
+    │   ├── image2.jpg
+    │   └── ...
+    │
+    ├── /label2
+    │   ├── image1.jpg
+    │   ├── image2.jpg
+    │   └── ...
+    │
+    └── /labelN
+        ├── image1.jpg
+        ├── image2.jpg
+        └── ...
+You can run an evaluation against the labels by running the command
 
-/dataset_directory
-
-│
-
-├── /label1
-
-│ ├── image1.jpg
-
-│ ├── image2.jpg
-
-│ └── ...
-
-│
-
-├── /label2
-
-│ ├── image1.jpg
-
-│ ├── image2.jpg
-
-│ └── ...
-
-│
-
-└── /labelN
-
-├── image1.jpg
-
-├── image2.jpg
-
-└── ...
-
-You can run an evaluation against the labels by running the command (all one line):
-
-  
-
-`docker compose build && docker compose run local_fastapi python classify_directory.py --root=dataset_directory --classifier_json_file=classifier_config.json --eval_only=True`
-
-  
+ - `docker compose build && docker compose run local_fastapi
+   python classify_directory.py --root=dataset_directory
+   --classifier_json_file=classifier_config.json --eval_only=True`
 
 If you want to run classifications on a custom dataset, you can either use our API or build a custom Ray Dataset and use the utilities defined in `batch_processing.py`.
 
-  
-
 ### A Quick Start for Self-Hosting on AWS
-
 To launch a self-hosted version of this service in AWS, we'll spin up a fresh EC2 instance. Choose "Deep Learning OSS Nvidia Driver AMI GPU PyTorch 2.4 (Ubuntu 22.04)" as your AMI and g5.xlarge as your instance size. After that you should be able to just run:
 
-  
-
 ```
-
 git clone https://github.com/DirectAI/simple-data-free-model-server
-
 cd simple-data-free-model-server
-
 docker compose build && docker compose up
-
 ```
 
 ### Method TLDR
-
 This repository presents the idea of a _semantic nearest neighbors_ for building custom decision boundaries with late-fusion zero-shot models. We use CLIP and OWL-ViT-ST as our base late-stage zero-shot image classifier and object detector, respectively. See the code for implementation details.
 
 ##### Image classifier
-
 The standard approach for a late-stage zero-shot image classifier is to take a set of _n_ labels, embed them via the associated language model, and then append those embeddings to generate a linear classification layer on top of the image embedding from the associated image model. This head can also be interpreted as a nearest neighbors layer, as the predicted class is just the class with text embedding most similar to the image embedding.
 
 Let $d(t_i, v) > 0$ be the relevancy function between text embedding $i$ and the image embedding $v$. Then our class prediction for $v$ (denoted $f(v)$) via the traditional approach is:
@@ -165,26 +111,17 @@ To extend late-fusion zero-shot object detectors to be able to incorporate posit
 
 In other words, we first run a two-way object detection problem for each _meta class_ between its positive and negative examples, and then run an $n$-way object detection problem between the survivors from the previous problem for each _meta class_. This can be done efficiently by using an optimized scatter max function and by caching the IoU graph for reuse between NMS subproblems. In the absence of any negative examples, this is the same as assigning each box's score for a _meta class_ the max of the relevancy scores for each positive example belonging to that _meta class_ and then running NMS. If there are no negative examples and exactly one positive example per class, this is the same as the traditional method.
 
-
 ### On Pre-Commit Hooks
-
 - Make sure you run `pip install pre-commit` followed by `pre-commit install` before attempting to commit to the repo.
 
 ### Acknowledgements
-
 Special thanks to [Neo](https://neo.com) for funding DirectAI! Thank you to [OpenCLIP](https://github.com/mlfoundations/open_clip) and [Huggingface](https://huggingface.co) for providing the model implementations that we use here.
 
-
 ### Contact
-
 If you have any questions or comments, raise an issue or reach out to Isaac Robinson at isaac@directai.io.
 
-
 ### Contributing
-
 If you're interested in contributing, raise an issue or email Isaac and we'll write a contributing guide!
 
-
 ### Citing
-
 If you find this useful for your work, please cite this repository!
