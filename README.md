@@ -75,7 +75,7 @@ This repository presents the idea of a _semantic nearest neighbors_ for building
 ##### Image classifier
 The standard approach for a late-stage zero-shot image classifier is to take a set of _n_ labels, embed them via the associated language model, and then append those embeddings to generate a linear classification layer on top of the image embedding from the associated image model. This head can also be interpreted as a nearest neighbors layer, as the predicted class is just the class with text embedding most similar to the image embedding.
 
-Let $d(t_i, v) > 0$ be the relevancy function between text embedding $i$ and the image embedding $v$. Then our class prediction for $v$ (denoted $f(v)$) via the traditional approach is:
+Let $d(t_i, v) > 0$ be the relevancy function between text embedding $i$ and the image embedding $v$. Then our class prediction for $v$ (denoted $f(v)$ ) via the traditional approach is:
 
 $f(v) = \text{argmax}_i d(t_i, v)$
 
@@ -89,16 +89,19 @@ $f(v) = m(\text{argmax}_i d(t_i, v))$
 
 We can reinterpret the above as a two-stage process. Instead of running an _n_-way nearest neighbors problem, we can take for each _meta class_ the max of the relevancy scores of the provided examples, and then take the argmax over this _meta class_ level score.
 
-Let $S_j$ refer to the samples associated with the $j$th _meta class_. Then:
+Let $S_j$ refer to the samples associated with the $j$ th _meta class_. Then:
 
-$f(v) = \text{argmax}_j \text{max}_{i \in S_j} d(t_i, v)$
+$f(v) = \text{argmax}\_j \text{max}_{t_i \in S_j} d(t_i, v)$
+
 
 To extend this to allow for negative examples, we can replace the first stage max with a two-class nearest neighbors boundary between the positive and negative examples. Then, we can let our _meta class_ score be the score of the most relevant example if that example is positive, and the negative score if that example is negative. In other words, a _meta class_ that has more relevant positive examples will result in a higher score, and a _meta class_ with more relevant negative examples will result in a lower score.
 
-Let $P_j$ and $N_j$ refer to the positive and negative examples for _meta class_ $j$, respectively. In other words, if $t_i \in P_j$, then the $i$th text example is a positive example for _meta class_ $j$. Then, let $t_j$ refer to the example in $P_j \cup N_j$ that is most relevant, and let $\hat{d}(j, v)$ be the result of the two-class nearest neighbor problem run for each _meta class_ $j$. We have:
+Let $P_j$ and $N_j$ refer to the positive and negative examples for _meta class_ $j$, respectively. In other words, if $t_i \in P_j$, then the $i$ th text example is a positive example for _meta class_ $j$. Then, let $t_j$ refer to the example in $P_j \cup N_j$ that is most relevant, and let $\hat{d}(j, v)$ be the result of the two-class nearest neighbor problem run for each _meta class_ $j$. We have:
 
 $t_j = \text{argmax}_{t_i \in P_j \cup N_j} d(t_i, v)$
+
 $\hat{d}(j, v) = d(t_j, v)$ if $t_j \in P_j$ else $-d(t_j, v)$
+
 $f(v) = \text{argmax}_j \hat{d}(j, v)$
 
 Note that if there are no negative examples, this is the same as the previous case, and if there are no negative examples and exactly one positive example per _meta class_ this is equivalent to the traditional method. Also note that if the most relevant example for all of the _meta classes_ is a negative example, then this function attempts to choose the 'least irrelevant' prediction.
