@@ -1,0 +1,19 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Giving Feedback to Zero Shot Image Models
+message: >-
+  If you find this repository useful, please cite it using
+  the metadata in this file!
+type: software
+authors:
+  - given-names: Isaac
+    family-names: Robinson
+    email: isaac@directai.io
+  - given-names: Ben
+    family-names: Brooks
+repository-code: 'https://github.com/DirectAI/simple-data-free-model-server'
+license: Apache-2.0
+version: 0.0.1
+date-released: '2024-10-18'

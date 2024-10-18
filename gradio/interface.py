@@ -31,6 +31,21 @@ css = """
 """
 
 with gr.Blocks(css=css) as demo:
+    gr.Markdown(
+        """
+        Choose whether to make a detector or a classifier via the "Type of Model" Dropdown.
+        Then, add a new class via the "Add Class" button and give it a name referring to what should be in that class.
+        For example, to detect faces in an image, add a class and name it _face_.
+        Hit enter on your keyboard to confirm your changes.
+        Upload an image and see your new model in action, no training data required!
+        To get more specific as to what should or should not belong to a class, hit the "advanced configuration" dropdown for a class.
+        For example, if you have a _shirt_ class and want to make sure it's not detecting a _jacket_, click advanced config, click add example under examples to exclude, and then write _jacket_.
+        (It sometimes takes some creativity to help the model understand what decision boundary you're going for!)
+        If you want to take the model you made and use it via the hosted API, you can either copy and paste the generated JSON, or you can click "Deploy" and use the "deployed_id" directly!
+        API documentation is hosted at the {url}:8000/docs endpoint.
+        """
+    )
+    
     frontend_ephemeral_deployed_id = gr.State(None)
     models_state = gr.State(DualModelInterface())
     current_class_idx = gr.State(0)
