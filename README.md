@@ -3,8 +3,7 @@
 
 We host zero-shot image models to allow clients to use computer vision at scale without having to collect / label lots of training data or train their own model. However, zero-shot models don't necessarily work out of the box for all cases. We introduce an algorithm for providing feedback to zero-shot models by extending the standard linear decision boundary in the model's embedding space into a two-stage nearest neighbors algorithm, which allows for much more fine-tuned control over what the model considers to belong in a particular class with minimal impact on runtime.
 
-### On Pre-Commit Hooks
-- Make sure you run `pip install pre-commit` followed by `pre-commit install` before attempting to commit to the repo.
+A hosted version of the Gradio frontend is available at [sandbox.oss.directai.io](https://sandbox.oss.directai.io), and a hosted version of the open source API is available at [api.oss.directai.io](https://api.oss.directai.io), with auto-generated docs available at [api.oss.directai.io/docs](https://api.oss.directai.io). WE MAKE NO GUARANTEES ABOUT UPTIME / AVAILABILITY OF THE HOSTED OPEN SOURCE IMPLEMENTATION. For a high uptime implementation, see our commercial offering at [api.alpha.directai.io/docs](https://api.alpha.directai.io/docs).
 
 ### Launching Production Service
 - Set your logging level preference in `directai_fastapi/.env`. See options on [python's logging documentation](https://docs.python.org/3/library/logging.html#levels). An empty string input defaults to `logging.INFO`.
